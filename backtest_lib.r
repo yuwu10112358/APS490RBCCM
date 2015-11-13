@@ -15,11 +15,10 @@ data_extraction <- function()
  #The excel sheet contains 3 tables arranged in order: Tick, Ask, Bid price.
  #Number of columns in each table can vary
  #StartRow = 3
-  file <- ("Intraday_Test_Data.xlsx", 
-                        sheet=1, 
-                        startRow = 3,
-                        check.names = FALSE
-                        )
+  file <- readWorksheetFromFile("Intraday_Test_Data.xlsx", 
+                                sheet=1, 
+                                startRow = 3,
+                                check.names = FALSE)
 
   mylist = c()
   mylist[1] = 1
