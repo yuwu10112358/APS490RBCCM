@@ -11,10 +11,11 @@ data_extraction <- function()
  #Requirements:
  #The excel sheet contains 3 tables arranged in order: Tick, Ask, Bid price.
  #Number of columns in each table can vary
+ #StartRow = 3
   
   install.packages("XLConnect")
   library(XLConnect)
-  file <- readWorksheetFromFile("/Users/jewelho/Desktop/Capstone/Code/APS490RBCCM/Intraday_Test_Data.xlsx", 
+  file <- readWorksheetFromFile("/APS490RBCCM/Intraday_Test_Data.xlsx", 
                         sheet=1, 
                         startRow = 3,
                         check.names = FALSE
