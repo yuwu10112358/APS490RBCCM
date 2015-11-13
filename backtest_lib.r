@@ -15,7 +15,7 @@ data_extraction <- function()
   
   install.packages("XLConnect")
   library(XLConnect)
-  file <- readWorksheetFromFile("/APS490RBCCM/Intraday_Test_Data.xlsx", 
+  file <- ("Intraday_Test_Data.xlsx", 
                         sheet=1, 
                         startRow = 3,
                         check.names = FALSE
