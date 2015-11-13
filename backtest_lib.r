@@ -5,12 +5,33 @@
 
 #
 ############### Jewel ############################
+# Nov 12 notes: 1) 1 function is sufficient 2) time series data clarifiaction
 data_extraction <- function()
 {
-  #take in excel
-  #do stuff (delete first two rows, change date, etc)
-  #output csvs
+ #Requirements:
+ #The excel sheet contains 3 tables arranged in order: Tick, Ask, Bid price.
+ #Number of columns in each table can vary
+  
+  install.packages("XLConnect")
+  library(XLConnect)
+  file <- readWorksheetFromFile("/Users/jewelho/Desktop/Capstone/Code/APS490RBCCM/Intraday_Test_Data.xlsx", 
+                        sheet=1, 
+                        startRow = 3,
+                        check.names = FALSE
+                        )
+
+  mylist = c()
+  mylist[1] = 1
+  for(i in 1:length(file)){
+    if(is.na(file[,i])) {
+      mylist[length(mylist)+1] = i
+    }}
+  
+tick = file[, mylist[1]:   (mylist[2] - 1)] 
+bid  = file[,(mylist[2]+1):(mylist[3] - 1)]
+ask  = file[,(mylist[3]+1):length(file)]
 }
+
 
 inputData <- function(){
   #reads csv
