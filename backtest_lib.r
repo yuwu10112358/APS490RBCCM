@@ -6,15 +6,15 @@
 #
 ############### Jewel ############################
 # Nov 12 notes: 1) 1 function is sufficient 2) time series data clarifiaction
+install.packages("XLConnect")
+library(XLConnect)
+
 data_extraction <- function()
 {
  #Requirements:
  #The excel sheet contains 3 tables arranged in order: Tick, Ask, Bid price.
  #Number of columns in each table can vary
  #StartRow = 3
-  
-  install.packages("XLConnect")
-  library(XLConnect)
   file <- ("Intraday_Test_Data.xlsx", 
                         sheet=1, 
                         startRow = 3,
@@ -34,12 +34,6 @@ ask  = file[,(mylist[3]+1):length(file)]
 }
 
 
-inputData <- function(){
-  #reads csv
-  ourdata <- read.csv("/Users/jewelho/Desktop/Capstone/Code/capstone1.csv")
-  #format date into time series
-  return(ourdata)
-}
 ##################################################
 
 ################# Gordon ######################3
