@@ -19,7 +19,7 @@ strategy_naive <- function(starttime,endtime, symbol/sector){
     # elseif(stock_price[2,i] = 105)
     #    if(snow[3] == -1) 
     # snow = c(stock_price[1,i],stock_price[2,i],0)
-    #order: datetime, price, amount, b/s, market/limit/stop
+    #order: msgtype, orderID, datetime, price, amount, b/s, market/limit/stop
     execute_orders(order)
     }
   }
