@@ -6,6 +6,7 @@
   -#
   -############### Jewel ############################
 -# Nov 12 notes: 1) 1 function is sufficient 2) time series data clarifiaction
+source('constants.r')
 data_extraction <- function()
 {
       - #Requirements:
@@ -59,23 +60,71 @@ data_extraction <- function()
     -# #############################################
 # ################### Yu & Paria ################
   -# # buy = 1; hold = 0; sell = -1
-update_orderbook <- function (marketprice, order book){
+update_orderbook <- function (marketprice, orderbook, timestamp){
   #taking in orderbook as argument and returns a list containing execution messages
   #for the purpose of this back testing order book will conly contain pending limit orders
-  ready_indices = (orderbook$price => marketprice && orderbook$side == buy) || (orderbook$price <= marketprice && orderbook$side == sell)
+  ready_indices = (orderbook[,Con_FieldName_Price] >= marketprice && orderbook[,Con_FieldName_Side] == Con_Side_Buy) || (orderbook[,Con_FieldName_Price] <= marketprice && orderbook[,Con_FieldName_Side] == Con_Side_Sell)
   ready_orders = orderbook[ready_indices,]
   orderbook = orderbook[!ready_indices,]
+  return (generate_fill_msgs(ready_orders, marketprice, timestamp))
+}
+
+update_trades_pnl_tables<- function (fill_msgs, posTable, tradesTable){
+  #takes in a list of execution messages and change the two tables, returns nothing
   
 }
 
-update_trades_pnl_tables<- function (list of exe, position table, tradestable){
-  #takes in a list of execution messages and change the two tables, returns nothing
+handle_orders <- function (orders, orderbook, marketprice, timestamp){
+  #handles all orders (new, replace, cancels) and update the order book approriately
+  #returns execution messages
+  new_orders <- orders[orders[,Con_FieldName_MsgType] == Con_MsgType_New,]
+  replace_orders <- orders[orders[,Con_FieldName_MsgType] == Con_MsgType_Replace,]
+  cancel_orders <- orders[orders[,Con_FieldName_MsgType] == Con_MsgType_Cancel,]
+  
+  mkt_new <- new_orders[new_orders[,Con_FieldName_OrdType] == Con_OrdType_Mkt, ]
+  limit_new <- new_orders[new_orders[,Con_FieldName_OrdType] == Con_OrdType_Limit, ]
+  
+  insert_into_orderbook(limit_new, orderbook)
+  exec_replace <- handle_replaces(replace_orders, orderbook, timestamp)
+  exec_cancel <- handle_cancels(cancel_orders, orderbook, timestamp)
+  #fill must come after replace and cancel has been handled
+  exec_fill <- rbind(generate_fill_msgs(mkt_new, marketprice, timestamp), update_orderbook(marketprice, orderbook, timestamp))
+  
+  return(rbind(exec_replace, exec_cancel, exec_fill))
 }
 
-handle_orders <- function (list of orders, order book){
-  #handles all orders (new, replace, cancels) and update the order book approriately
+generate_fill_msgs <- function(ready_orders_list, marketprice, timestamp){
+  fill_msgs <- data.frame(matrix(0, nrow(ready_orders_list), length(exec_msg_spec)))
+  colnames(fill_msgs) <- exec_msg_spec
+  fill_msgs[, Con_FieldName_OrdID] <- ready_orders_list[, Con_FieldName_OrdID]
+  fill_msgs[, Con_FieldName_ExecStatus] <- Con_ExecStatus_filled
+  fill_msgs[, Con_FieldName_Sym] <- ready_orders_list[, Con_FieldName_Sym]
+  fill_msgs[, Con_FieldName_Qty] <- ready_orders_list[, Con_FieldName_Qty]
+  fill_msgs[, Con_FieldName_AvgPrice] <- marketprice
+  fill_msgs[, Con_FieldName_Side] <- ready_orders_list[, Con_FieldName_Side]
+  fill_msgs[, Con_FieldName_Time] <- timestamp
+  return (fill_msgs)
+}
+
+insert_into_orderbook <-function(limit_orders, orderbook){
+  #insert limit orders into orderbook, return nothing
+  new_entries <- data.frame((matrix(0, nrow(limit_orders), length(orderbook_spec))))
+  new_entry[, Con_FieldName_OrdID] <- limit_orders[, Con_FieldName_OrdID]
+  new_entry[, Con_FieldName_Time] <- limit_orders[, Con_FieldName_Time]
+  new_entry[, Con_FieldName_Sym] <- limit_orders[, Con_FieldName_Sym]
+  new_entry[, Con_FieldName_Price] <- limit_orders[, Con_FieldName_Price]
+  new_entry[, Con_FieldName_Qty] <- limit_orders[, Con_FieldName_Qty]
+  new_entry[, Con_FieldName_Side] <- limit_orders[, Con_FieldName_Side]
+  new_entry[, Con_FieldName_OrdType] <- limit_orders[, Con_FieldName_OrdType]
+  rbind(orderbook, new_entries)
+}
+
+handle_cancels <- function(cancelorders, orderbook){
   #returns execution messages
 }
 
-    -# ###############################################
-  # 
+handle_replaces <- function(replaceorders, orderbook){
+  #returns execution messages
+}
+
+    # ################################################ 
