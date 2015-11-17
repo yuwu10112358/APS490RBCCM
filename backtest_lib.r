@@ -61,6 +61,7 @@ data_extraction <- function()
 # ################### Yu & Paria ################
   -# # buy = 1; hold = 0; sell = -1
 update_orderbook <- function (marketprice, orderbook, timestamp){
+  #orderbook is a referene (pointer in an environment), and changes are meant to be permanent
   #taking in orderbook as argument and returns a list containing execution messages
   #for the purpose of this back testing order book will conly contain pending limit orders
   ready_indices = (orderbook[,Con_FieldName_Price] >= marketprice && orderbook[,Con_FieldName_Side] == Con_Side_Buy) || (orderbook[,Con_FieldName_Price] <= marketprice && orderbook[,Con_FieldName_Side] == Con_Side_Sell)
@@ -70,11 +71,16 @@ update_orderbook <- function (marketprice, orderbook, timestamp){
 }
 
 update_trades_pnl_tables<- function (fill_msgs, posTable, tradesTable){
+  #posTable and tradesTable are references and changes are permanent
   #takes in a list of execution messages and change the two tables, returns nothing
+  #make sure every message is fill for sure
+  fill_msgs <- fill_msgs[fill_msgs[,Con_FieldName_ExecStatus] == Con_ExecStatus_filled,]
+  #update the position tables
   
 }
 
 handle_orders <- function (orders, orderbook, marketprice, timestamp){
+  #orderbook is a referene (pointer in an environment), and changes are meant to be permanent
   #handles all orders (new, replace, cancels) and update the order book approriately
   #returns execution messages
   new_orders <- orders[orders[,Con_FieldName_MsgType] == Con_MsgType_New,]
@@ -107,6 +113,7 @@ generate_fill_msgs <- function(ready_orders_list, marketprice, timestamp){
 }
 
 insert_into_orderbook <-function(limit_orders, orderbook){
+  #orderbook is a referene (pointer in an environment), and changes are meant to be permanent
   #insert limit orders into orderbook, return nothing
   new_entries <- data.frame((matrix(0, nrow(limit_orders), length(orderbook_spec))))
   new_entry[, Con_FieldName_OrdID] <- limit_orders[, Con_FieldName_OrdID]

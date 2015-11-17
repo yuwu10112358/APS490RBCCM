@@ -29,6 +29,8 @@ Con_MsgType_Replace <- "G"
 Con_MsgType_Cancel <- "F"
 Con_OrdType_Mkt <- 1
 Con_OrdType_Limit <- 2
+Con_Sym_Cash <- "Cash"
+Con_Sym_Portfolio<- "Portfolio"
 
 order_msg_spec <- c(Con_FieldName_MsgType, 
                     Con_FieldName_Sym, 
@@ -55,8 +57,7 @@ orderbook_spec <- c(Con_FieldName_OrdID,
                     Con_FieldName_Side,
                     Con_FieldName_OrdType)
 
-positionbook_spec <- c(Con_FieldName_Time,
-                       Con_FieldName_Sym,
+positionbook_spec <- c(Con_FieldName_Sym,
                        Con_FieldName_Qty,
                        Con_FieldName_BookVal,
                        Con_FieldName_MktVal)
