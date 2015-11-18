@@ -31,6 +31,8 @@ Con_OrdType_Mkt <- 1
 Con_OrdType_Limit <- 2
 Con_Sym_Cash <- "Cash"
 Con_Sym_Portfolio<- "Portfolio"
+Con_OpenClose_Open <- "Open"
+Con_OpenClose_Close <- "Close"
 
 order_msg_spec <- c(Con_FieldName_MsgType, 
                     Con_FieldName_Sym, 
