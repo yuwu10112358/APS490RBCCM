@@ -21,6 +21,7 @@ Con_FieldName_MktVal = "MarketValue"
 Con_FieldName_OpenClose = "Open/Close"
 Con_FieldName_Pnl = "PnL"
 
+
 Con_ExecStatus_filled <- 2
 Con_Side_Buy <- 1
 Con_Side_Sell <- 2
@@ -31,6 +32,7 @@ Con_OrdType_Mkt <- 1
 Con_OrdType_Limit <- 2
 Con_Sym_Cash <- "Cash"
 Con_Sym_Portfolio<- "Portfolio"
+Con_PriceCol <- 2
 
 order_msg_spec <- c(Con_FieldName_MsgType, 
                     Con_FieldName_Sym, 
