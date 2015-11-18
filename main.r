@@ -26,7 +26,7 @@ names(global_tables$positionbook)[1] = 0
 global_tables$tradesbook <- data.frame(matrix(0, 0, length(tradesbook_spec)))
 colnames(global_tables$tradesbook) <- tradesbook_spec
 
-inputData()
+data_extraction()
 strategy_naive()
 output <- output()
 
