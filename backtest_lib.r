@@ -24,7 +24,7 @@ data_extraction <- function(env, tick_name, bid_name, ask_name)
 
 }
  
-update_orderbook <- function (marketprice, orderbook, timestamp){
+update_orderbook <- function (askprice, marketprice, orderbook, timestamp){ #Adjust function to include ask and bid
   #orderbook is a referene (pointer in an environment), and changes are meant to be permanent
   #taking in orderbook as argument and returns a list containing execution messages
   #for the purpose of this back testing order book will conly contain pending limit orders
