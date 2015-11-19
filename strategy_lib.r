@@ -30,7 +30,7 @@ strategy_naive <- function(starttime,endtime, symbol){
     }
     
     #active portion of strategy
-    if (time = actiontime[actcounter]){ 
+    if (bid$Date[i] == actiontime[actcounter]){ 
       orderline = data.frame(matrix(0, nrow=1, length(order_msg_spec)))
       if(bid$HIGH[i] >= highprice){
         orderline[nrows(orderline)+1, Con_FieldName_MsgType] <- Con_MsgType_New

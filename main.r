@@ -13,6 +13,7 @@ init_cash = 100000
 #trade matrix format: time, symbol, side, quantity, price, open/close, pnl
 #position matrix: time, asset, #of shares, book value, market value,
 global_tables = new.env()
+
 global_tables$orderbook <- data.frame(matrix(0, 0, length(orderbook_spec)))
 colnames(global_tables$orderbook) <- orderbook_spec
 
@@ -25,8 +26,11 @@ names(global_tables$positionbook)[1] = 0
 
 global_tables$tradesbook <- data.frame(matrix(0, 0, length(tradesbook_spec)))
 colnames(global_tables$tradesbook) <- tradesbook_spec
+global_tables$market_price <- list(vector())
+global_tables$bid_price <- list(vector())
+global_tables$ask_price <- list(vector())
 
-data_extraction()
+data_extraction(global_tables, "market_price", "bid_price", "ask_price")
 strategy_naive()
 output <- output()
 
