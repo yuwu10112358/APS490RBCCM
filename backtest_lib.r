@@ -1,6 +1,6 @@
 
 source('constants.r')
-data_extraction <- function(env, tick_name, bid, ask)
+data_extraction <- function(env, tick_name, bid_name, ask_name)
 {
       #Requirements:
         #The excel sheet contains 3 tables arranged in order: Tick, Ask, Bid price.
@@ -19,11 +19,10 @@ data_extraction <- function(env, tick_name, bid, ask)
           }}
     cat(tick_name)
     cat(env$tick_name)
-    tick = file[, mylist[1]:   (mylist[2] - 1)] 
-    bid  = file[,(mylist[2]+1):(mylist[3] - 1)]
-    ask  = file[,(mylist[3]+1):length(file)]
-    env$market_price <- tick
-    
+    env[[tick_name]] = file[, mylist[1]:   (mylist[2] - 1)] 
+    env[[bid_name]]  = file[,(mylist[2]+1):(mylist[3] - 1)]
+    env[[ask_name]]  = file[,(mylist[3]+1):length(file)]
+
 }
  
 update_orderbook <- function (marketprice, orderbook, timestamp){
