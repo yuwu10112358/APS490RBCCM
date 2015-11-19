@@ -1,6 +1,11 @@
 source('constants.r')
 source('strategy_lib.r')
 source('backtest_lib.r')
+library(XLConnect)
+library(knitr)
+
+#knitr::spin
+
 
 init_cash = 100000
 #global_variables: position matrices, trade matrices, ourdata, order book
@@ -34,4 +39,4 @@ data_extraction(global_tables, "market_price", "bid_price", "ask_price")
 strategy_naive()
 output <- output()
 
-yay
+# yay

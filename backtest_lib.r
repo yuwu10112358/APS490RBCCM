@@ -1,11 +1,10 @@
-
 source('constants.r')
+
 data_extraction <- function(env, tick_name, bid_name, ask_name)
 {
       #Requirements:
         #The excel sheet contains 3 tables arranged in order: Tick, Ask, Bid price.
         #Number of columns in each table can vary
-    library(XLConnect)
     file <- readWorksheetFromFile("testdata.xls", 
                                     sheet=1, 
                                     startRow = 3,
