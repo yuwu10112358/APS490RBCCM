@@ -31,7 +31,7 @@ global_tables[[Con_GlobalVarName_PositionBook]] <- list(init_pos)
 names(global_tables[[Con_GlobalVarName_PositionBook]])[1] = 0
 
 global_tables[[Con_GlobalVarName_TradesBook]] <- data.frame(matrix(0, 0, length(tradesbook_spec)))
-colnames(global_tables$tradesbook) <- tradesbook_spec
+colnames(global_tables[[Con_GlobalVarName_TradesBook]]) <- tradesbook_spec
 
 global_tables[[Con_GlobalVarName_MktPrice]] <- list(vector())
 global_tables[[Con_GlobalVarName_BidPrice]] <- list(vector())
@@ -40,7 +40,11 @@ global_tables[[Con_GlobalVarName_AskPrice]] <- list(vector())
 data_extraction(global_tables, Con_GlobalVarName_MktPrice, Con_GlobalVarName_BidPrice, Con_GlobalVarName_AskPrice)
 strategy_naive(global_tables[[Con_GlobalVarName_MktPrice]][["Date"]][1],
                global_tables[[Con_GlobalVarName_MktPrice]][["Date"]][length(global_tables[[Con_GlobalVarName_MktPrice]][["Date"]])], 
-               "AAPL")
+               "AAPL", global_tables, bid= Con_GlobalVarName_BidPrice, 
+               ask = Con_GlobalVarName_AskPrice, 
+               mktprice = Con_GlobalVarName_MktPrice,
+               positionbook = Con_GlobalVarName_PositionBook,
+               pendingbook = Con_GlobalVarName_LOB)
 output <- output()
 
 # yay
