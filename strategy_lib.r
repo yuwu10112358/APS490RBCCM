@@ -1,11 +1,11 @@
 source('backtest_lib.r')
 
 #####################   Snow      ##########################
-strategy_naive <- function(starttime,endtime, symbol){
+strategy_naive <- function(starttime,endtime, symbol, env, bid, ask, mktprice, positionbook, pendingbook){
   # Active portion of strategy
   actiontime <- c(starttime, starttime+60, starttime+120) # Times to perform active portion
   actcounter <- 1 # count for which action time we are on
-  
+
   # Constants
   quantity <- 1
   highprice <- 110
@@ -23,65 +23,72 @@ strategy_naive <- function(starttime,endtime, symbol){
   
   for (i in 1:looprow){
     #check market condition
-    response <- update_orderbook(global_tables$bid_price$HIGH[i], global_tables$ask_price$LOW[i], global_tables$orderbook, global_tables$market_price$Date[i])
-    
+
+    response <- update_orderbook(env[[bid]][["HIGH"]][i], env[[ask]][["LOW"]][i], 
+                                 env, pendingbook, 
+                                 env[[mktprice]][["Date"]][i])
+
     # Passive portion
     if (nrow(response)!=0){
       passiveupdate(response)
     }
-    
     #active portion of strategy
-    if (global_tables$market_price$Date[i] == actiontime[actcounter]){ 
+    if (env[[mktprice]][["Date"]][i] == actiontime[actcounter]){ 
       actcounter <- actcounter +1
       orderline = data.frame(matrix())
-      if(global_tables$bid_price$HIGH[i] >= highprice & global_tables$positionbook$Con_FieldName_Qty == 0){
+      currposition <- env[[positionbook]][[i]]
+      corsymbol <- (env[[positionbook]][[i]][[Con_FieldName_Sym]] == symbol)
+      currposition[corsymbol,Con_FieldName_Qty]
+      #what does this if do
+      if(env[[ask]][["LOW"]][i] >= highprice & length(currposition[corsymbol,Con_FieldName_Qty])==0){
         entry <- nrow(orderline+1)
         orderline[entry, Con_FieldName_MsgType] <- Con_MsgType_New
         orderline[entry, Con_FieldName_OrdID] <- ordercounter
         ordercounter <- ordercounter + 1
         orderline[entry, Con_FieldName_Sym] <- symbol
-        orderline[entry, Con_FieldName_Price] <- global_tables$bid_price$HIGH[i]
+        orderline[entry, Con_FieldName_Price] <- env[[ask]][["LOW"]][i]
         orderline[entry, Con_FieldName_Qty] <- quantity
         orderline[entry, Con_FieldName_Side] <- Con_Side_Buy
         orderline[entry, Con_FieldName_OrdType] <- Con_OrdType_Mkt
       }
-      else if(global_tables$ask_price$LOW[i] <= lowprice & global_tables$positionbook$Con_FieldName_Qty == 0){
+      else if(env[[bid]][["HIGH"]][i] <= lowprice & length(currposition[corsymbol,Con_FieldName_Qty])==0){
         entry <- nrow(orderline+1)
         orderline[entry, Con_FieldName_MsgType] <- Con_MsgType_New
         orderline[entry, Con_FieldName_OrdID] <- ordercounter
         ordercounter <- ordercounter + 1
         orderline[entry, Con_FieldName_Sym] <- symbol
-        orderline[entry, Con_FieldName_Price] <- global_tables$ask_price$LOW[i]
+        orderline[entry, Con_FieldName_Price] <- env[[bid]][["HIGH"]][i]
         orderline[entry, Con_FieldName_Qty] <- quantity
         orderline[entry, Con_FieldName_Side] <- Con_Side_Sell
         orderline[entry, Con_FieldName_OrdType] <- Con_OrdType_Mkt
       }
-      else if(global_tables$market_price$HIGH[i] <= midprice-interval & global_tables$market_price$HIGH[i] >= midprice+interval){
-        if(global_tables$positionbook$Con_FieldName_Qty > 0) {
+      #is this if condition ever going to be satisfied?
+      else if(env[[mktprice]][["HIGH"]][i] >= midprice-interval & env[[mktprice]][["HIGH"]][i] <= midprice+interval){
+        if(currposition[corsymbol,Con_FieldName_Qty]>0) {
           entry <- nrow(orderline+1)
           orderline[entry, Con_FieldName_MsgType] <- Con_MsgType_New
           orderline[entry, Con_FieldName_OrdID] <- ordercounter
           ordercounter <- ordercounter + 1
           orderline[entry, Con_FieldName_Sym] <- symbol
-          orderline[entry, Con_FieldName_Price] <- global_tables$bid_price$HIGH
+          orderline[entry, Con_FieldName_Price] <- env[[bid]][["HIGH"]][i]
           orderline[entry, Con_FieldName_Qty] <- quantity
           orderline[entry, Con_FieldName_Side] <- Con_Side_Sell
           orderline[entry, Con_FieldName_OrdType] <- Con_OrdType_Mkt
         }
-        else if(global_tables$positionbook$Con_FieldName_Qty < 0) {
+        else if(currposition[corsymbol,Con_FieldName_Qty] < 0) {
           entry <- nrow(orderline+1)
           orderline[entry, Con_FieldName_MsgType] <- Con_MsgType_New
           orderline[entry, Con_FieldName_OrdID] <- ordercounter
           ordercounter <- ordercounter + 1
           orderline[entry, Con_FieldName_Sym] <- symbol
-          orderline[entry, Con_FieldName_Price] <- global_tables$ask_price$LOW[i]
+          orderline[entry, Con_FieldName_Price] <- env[[ask]][["LOW"]][i]
           orderline[entry, Con_FieldName_Qty] <- quantity
           orderline[entry, Con_FieldName_Side] <- Con_Side_Buy
           orderline[entry, Con_FieldName_OrdType] <- Con_OrdType_Mkt
         }
       }
       orderline<- orderline[,-1]
-      #response <- handle_orders(orderline, global_tables$orderbook, ask$LOW[i], tick$Date[i])
+      response <- handle_orders(orderline, env, pendingbook, env[[bid]][["HIGH"]][i], env[[ask]][["LOW"]][i], env[[mktprice]][["Date"]][i])
       if (nrow(response)!=0){
         passiveupdate(response)
       }
