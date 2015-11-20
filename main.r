@@ -36,7 +36,10 @@ global_tables$bid_price <- list(vector())
 global_tables$ask_price <- list(vector())
 
 data_extraction(global_tables, "market_price", "bid_price", "ask_price")
+NROW(global_tables$ask_price)
+NROW(global_tables$bid_price)
 strategy_naive(global_tables$market_price$Date[1],global_tables$market_price$Date[length(global_tables$market_price$Date)], "AAPL")
-output <- output()
+output <- output(global_tables$tradesbook, global_tables$positionbook, global_tables$ask_price,
+                 global_tables$bid_price, global_tables$market_data)
 
 # yay
