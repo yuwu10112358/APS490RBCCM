@@ -1,13 +1,13 @@
 source('constants.r')
 
-data_extraction <- function(env, symbol, tick_name, bid_name, ask_name,)
+data_extraction <- function(filename, env, symbol, tick_name, bid_name, ask_name)
 { 
         #Definition: This function creates tables (tick, bid and ask) of stock prices. It imports stock price data from an Excel file that links to the Bloomberg terminal.
         #Requirements:
         #The excel sheet contains 3 tables arranged in order: Tick, Ask, Bid price.
         #Number of columns in each table can vary
   
-    file <- readWorksheetFromFile("testdata.xls", 
+    file <- readWorksheetFromFile(filename, 
                                     sheet= symbol, 
                                     startRow = 3,
                                     check.names = FALSE

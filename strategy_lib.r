@@ -3,7 +3,8 @@ source('backtest_lib.r')
 #####################   Snow      ##########################
 strategy_naive <- function(starttime,endtime, symbol, env, bid, ask, mktprice, positionbook, pendingbook){
   # Active portion of strategy
-  actiontime <- c(starttime, starttime+60, starttime+120) # Times to perform active portion
+  actiontime <- c(starttime + 30 * 60 * (0: 10), endtime) # Times to perform active portion
+  cat(actiontime, "\n")
   actcounter <- 1 # count for which action time we are on
 
   # Constants
@@ -35,9 +36,10 @@ strategy_naive <- function(starttime,endtime, symbol, env, bid, ask, mktprice, p
     #active portion of strategy
     if (env[[mktprice]][["Date"]][i] == actiontime[actcounter]){ 
       actcounter <- actcounter +1
-      orderline = data.frame(matrix())
-      currposition <- env[[positionbook]][[i]]
-      corsymbol <- (env[[positionbook]][[i]][[Con_FieldName_Sym]] == symbol)
+      orderline = data.frame(matrix(NA, 0, length(order_msg_spec)))
+      colnames(orderline) <- order_msg_spec
+      currposition <- env[[positionbook]][[length(env[[positionbook]])]]
+      corsymbol <- (env[[positionbook]][[length(env[[positionbook]])]][[Con_FieldName_Sym]] == symbol)
       currposition[corsymbol,Con_FieldName_Qty]
       #what does this if do
       if(env[[ask]][["LOW"]][i] >= highprice & length(currposition[corsymbol,Con_FieldName_Qty])==0){
@@ -87,7 +89,9 @@ strategy_naive <- function(starttime,endtime, symbol, env, bid, ask, mktprice, p
           orderline[entry, Con_FieldName_OrdType] <- Con_OrdType_Mkt
         }
       }
-      orderline<- orderline[,-1]
+      #orderline<- orderline[,-1]
+      cat(nrow(orderline), "\n")
+      cat(colnames(orderline), "\n")
       response <- handle_orders(orderline, env, pendingbook, env[[bid]][["HIGH"]][i], env[[ask]][["LOW"]][i], env[[mktprice]][["Date"]][i])
       if (nrow(response)!=0){
         passiveupdate(response)
