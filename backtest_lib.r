@@ -1,12 +1,14 @@
 source('constants.r')
 
-data_extraction <- function(env, tick_name, bid_name, ask_name)
-{
-      #Requirements:
+data_extraction <- function(env, symbol, tick_name, bid_name, ask_name,)
+{ 
+        #Definition: This function creates tables (tick, bid and ask) of stock prices. It imports stock price data from an Excel file that links to the Bloomberg terminal.
+        #Requirements:
         #The excel sheet contains 3 tables arranged in order: Tick, Ask, Bid price.
         #Number of columns in each table can vary
+  
     file <- readWorksheetFromFile("testdata.xls", 
-                                    sheet=1, 
+                                    sheet= symbol, 
                                     startRow = 3,
                                     check.names = FALSE
                                     )
@@ -25,10 +27,9 @@ data_extraction <- function(env, tick_name, bid_name, ask_name)
 
  #tested
 update_orderbook <- function (bid, ask, env, orderbook_name, timestamp){
-
   #orderbook is a referene (pointer in an environment), and changes are meant to be permanent
   #taking in orderbook as argument and returns a list containing execution messages
-  #for the purpose of this back testing order book will conly contain pending limit orders
+  #for the purpose of this back testing order book will only contain pending limit orders
   orderbook <- env[[orderbook_name]]
   
   ready_indices <- (orderbook[,Con_FieldName_Price] >= ask & orderbook[,Con_FieldName_Side] == Con_Side_Buy) |(orderbook[,Con_FieldName_Price] <= bid & orderbook[,Con_FieldName_Side] == Con_Side_Sell)
