@@ -1,11 +1,10 @@
-
 source('constants.r')
+
 data_extraction <- function(env, tick_name, bid_name, ask_name)
 {
       #Requirements:
         #The excel sheet contains 3 tables arranged in order: Tick, Ask, Bid price.
         #Number of columns in each table can vary
-    library(XLConnect)
     file <- readWorksheetFromFile("testdata.xls", 
                                     sheet=1, 
                                     startRow = 3,
@@ -23,8 +22,10 @@ data_extraction <- function(env, tick_name, bid_name, ask_name)
     env[[ask_name]]  = file[,(mylist[3]+1):length(file)]
 
 }
+
  #tested
 update_orderbook <- function (bid, ask, env, orderbook_name, timestamp){
+
   #orderbook is a referene (pointer in an environment), and changes are meant to be permanent
   #taking in orderbook as argument and returns a list containing execution messages
   #for the purpose of this back testing order book will conly contain pending limit orders

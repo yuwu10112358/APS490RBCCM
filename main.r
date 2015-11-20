@@ -1,6 +1,11 @@
 source('constants.r')
 source('strategy_lib.r')
 source('backtest_lib.r')
+library(XLConnect)
+library(knitr)
+
+#knitr::spin
+
 
 init_cash = 100000
 #global_variables: position matrices, trade matrices, ourdata, order book
@@ -31,7 +36,7 @@ global_tables$bid_price <- list(vector())
 global_tables$ask_price <- list(vector())
 
 data_extraction(global_tables, "market_price", "bid_price", "ask_price")
-strategy_naive()
+strategy_naive(global_tables$market_price$Date[1],global_tables$market_price$Date[length(global_tables$market_price$Date)], "AAPL")
 output <- output()
 
-yay
+# yay
