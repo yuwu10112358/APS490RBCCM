@@ -4,6 +4,18 @@ source('backtest_lib.r')
 library(XLConnect)
 library(knitr)
 
+# notes 2015-11-20
+
+#1. ETL (cleaning, organizing section), factor in for missing data, outliers, etc. 
+# -> think of the opportunistic time intervals to trade (don't decide arbritarily, decide based on
+# intelligence)
+# -> separate the strategy from the market module in the flow chart 
+# -> market sends back fills and acknowledgements (assume we don't need this)
+# -> strategy will act only upon "fill" (may not need to do this) and "timer"
+# -> market reacts to order,replace,cancel and market data 
+# -> change active and passive to fill and timer 
+# -> highlight strategy with more detail 
+
 #knitr::spin
 
 
@@ -46,6 +58,9 @@ strategy_naive(global_tables[[Con_GlobalVarName_MktPrice]][["Date"]][1],
                mktprice = Con_GlobalVarName_MktPrice,
                positionbook = Con_GlobalVarName_PositionBook,
                pendingbook = Con_GlobalVarName_LOB)
-output <- output()
+
+output <- output(global_tables$tradebook, global_tables$positionbook, global_tables$ask_price, 
+                 global_tables$bid_price, globa_tables$market_data)
+
 
 #
