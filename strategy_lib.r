@@ -36,19 +36,11 @@ strategy_naive <- function(starttime,endtime, symbol, env, bid, ask, mktprice, p
     if (env[[mktprice]][["Date"]][i] == actiontime[actcounter]){ 
       actcounter <- actcounter +1
       orderline = data.frame(matrix())
+      currposition <- env[[positionbook]][[i]]
+      corsymbol <- (env[[positionbook]][[i]][[Con_FieldName_Sym]] == symbol)
+      currposition[corsymbol,Con_FieldName_Qty]
       #what does this if do
-      if(env[[bid]][["HIGH"]][i] >= highprice & global_tables$positionbook$Con_FieldName_Qty == 0){
-        entry <- nrow(orderline+1)
-        orderline[entry, Con_FieldName_MsgType] <- Con_MsgType_New
-        orderline[entry, Con_FieldName_OrdID] <- ordercounter
-        ordercounter <- ordercounter + 1
-        orderline[entry, Con_FieldName_Sym] <- symbol
-        orderline[entry, Con_FieldName_Price] <- env[[bid]][["HIGH"]][i]
-        orderline[entry, Con_FieldName_Qty] <- quantity
-        orderline[entry, Con_FieldName_Side] <- Con_Side_Buy
-        orderline[entry, Con_FieldName_OrdType] <- Con_OrdType_Mkt
-      }
-      else if(env[[ask]][["LOW"]][i] <= lowprice & env[[positionbook]][[Con_FieldName_Qty]] == 0){
+      if(env[[ask]][["LOW"]][i] >= highprice & length(currposition[corsymbol,Con_FieldName_Qty])==0){
         entry <- nrow(orderline+1)
         orderline[entry, Con_FieldName_MsgType] <- Con_MsgType_New
         orderline[entry, Con_FieldName_OrdID] <- ordercounter
@@ -56,12 +48,23 @@ strategy_naive <- function(starttime,endtime, symbol, env, bid, ask, mktprice, p
         orderline[entry, Con_FieldName_Sym] <- symbol
         orderline[entry, Con_FieldName_Price] <- env[[ask]][["LOW"]][i]
         orderline[entry, Con_FieldName_Qty] <- quantity
+        orderline[entry, Con_FieldName_Side] <- Con_Side_Buy
+        orderline[entry, Con_FieldName_OrdType] <- Con_OrdType_Mkt
+      }
+      else if(env[[bid]][["HIGH"]][i] <= lowprice & length(currposition[corsymbol,Con_FieldName_Qty])==0){
+        entry <- nrow(orderline+1)
+        orderline[entry, Con_FieldName_MsgType] <- Con_MsgType_New
+        orderline[entry, Con_FieldName_OrdID] <- ordercounter
+        ordercounter <- ordercounter + 1
+        orderline[entry, Con_FieldName_Sym] <- symbol
+        orderline[entry, Con_FieldName_Price] <- env[[bid]][["HIGH"]][i]
+        orderline[entry, Con_FieldName_Qty] <- quantity
         orderline[entry, Con_FieldName_Side] <- Con_Side_Sell
         orderline[entry, Con_FieldName_OrdType] <- Con_OrdType_Mkt
       }
       #is this if condition ever going to be satisfied?
-      else if(env[[mktprice]][["HIGH"]][i] <= midprice-interval & env[[mktprice]][["HIGH"]][i] >= midprice+interval){
-        if(env[[positionbook]][[Con_FieldName_Qty]] > 0) {
+      else if(env[[mktprice]][["HIGH"]][i] >= midprice-interval & env[[mktprice]][["HIGH"]][i] <= midprice+interval){
+        if(currposition[corsymbol,Con_FieldName_Qty]>0) {
           entry <- nrow(orderline+1)
           orderline[entry, Con_FieldName_MsgType] <- Con_MsgType_New
           orderline[entry, Con_FieldName_OrdID] <- ordercounter
@@ -72,7 +75,7 @@ strategy_naive <- function(starttime,endtime, symbol, env, bid, ask, mktprice, p
           orderline[entry, Con_FieldName_Side] <- Con_Side_Sell
           orderline[entry, Con_FieldName_OrdType] <- Con_OrdType_Mkt
         }
-        else if(env[[positionbook]][[Con_FieldName_Qty]] < 0) {
+        else if(currposition[corsymbol,Con_FieldName_Qty] < 0) {
           entry <- nrow(orderline+1)
           orderline[entry, Con_FieldName_MsgType] <- Con_MsgType_New
           orderline[entry, Con_FieldName_OrdID] <- ordercounter
