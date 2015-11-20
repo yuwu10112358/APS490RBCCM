@@ -50,7 +50,7 @@ global_tables[[Con_GlobalVarName_MktPrice]] <- list(vector())
 global_tables[[Con_GlobalVarName_BidPrice]] <- list(vector())
 global_tables[[Con_GlobalVarName_AskPrice]] <- list(vector())
 
-data_extraction("singledaydata.xls", global_tables, "Sheet1", Con_GlobalVarName_MktPrice, Con_GlobalVarName_BidPrice, Con_GlobalVarName_AskPrice)
+data_extraction("AAPL.xls", global_tables, "AAPL", Con_GlobalVarName_MktPrice, Con_GlobalVarName_BidPrice, Con_GlobalVarName_AskPrice)
 strategy_naive(global_tables[[Con_GlobalVarName_MktPrice]][["Date"]][1],
                global_tables[[Con_GlobalVarName_MktPrice]][["Date"]][length(global_tables[[Con_GlobalVarName_MktPrice]][["Date"]])], 
                "AAPL", global_tables, bid= Con_GlobalVarName_BidPrice, 
