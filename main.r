@@ -59,8 +59,8 @@ strategy_naive(global_tables[[Con_GlobalVarName_MktPrice]][["Date"]][1],
                positionbook = Con_GlobalVarName_PositionBook,
                pendingbook = Con_GlobalVarName_LOB)
 
-output <- output(global_tables$tradebook, global_tables$positionbook, global_tables$ask_price, 
-                 global_tables$bid_price, globa_tables$market_data)
+# output <- output(global_tables$tradebook, global_tables$positionbook, global_tables$ask_price, 
+#                  global_tables$bid_price, globa_tables$market_data)
 
 
 #
