@@ -17,25 +17,29 @@ data_extraction <- function(env, tick_name, bid_name, ask_name)
           if(is.na(file[,i])) {
             mylist[length(mylist)+1] = i
           }}
-    cat(tick_name)
-    cat(env$tick_name)
+
     env[[tick_name]] = file[, mylist[1]:   (mylist[2] - 1)] 
     env[[bid_name]]  = file[,(mylist[2]+1):(mylist[3] - 1)]
     env[[ask_name]]  = file[,(mylist[3]+1):length(file)]
 
 }
- 
-update_orderbook <- function (marketprice, orderbook, timestamp){
+ #tested
+update_orderbook <- function (bid, ask, env, orderbook_name, timestamp){
   #orderbook is a referene (pointer in an environment), and changes are meant to be permanent
   #taking in orderbook as argument and returns a list containing execution messages
   #for the purpose of this back testing order book will conly contain pending limit orders
-  ready_indices = (orderbook[,Con_FieldName_Price] >= marketprice && orderbook[,Con_FieldName_Side] == Con_Side_Buy) || (orderbook[,Con_FieldName_Price] <= marketprice && orderbook[,Con_FieldName_Side] == Con_Side_Sell)
-  ready_orders = orderbook[ready_indices,]
-  orderbook = orderbook[!ready_indices,]
-  return (generate_fill_msgs(ready_orders, marketprice, timestamp))
+  orderbook <- env[[orderbook_name]]
+  
+  ready_indices <- (orderbook[,Con_FieldName_Price] >= ask & orderbook[,Con_FieldName_Side] == Con_Side_Buy) |(orderbook[,Con_FieldName_Price] <= bid & orderbook[,Con_FieldName_Side] == Con_Side_Sell)
+  ready_orders <- orderbook[ready_indices,]
+  executed_price <- (orderbook[ready_indices, Con_FieldName_Side] == Con_Side_Buy) * ask + 
+    (orderbook[ready_indices, Con_FieldName_Side] == Con_Side_Sell) * bid
+
+  env[[orderbook_name]] <- orderbook[!ready_indices,]
+  return (generate_fill_msgs(ready_orders, executed_price, timestamp))
 }
 
-update_trades_pnl_tables<- function (fill_msgs, positionbook, tradesbook, timestamp){
+update_trades_pnl_tables<- function (fill_msgs, env, positionbook_name, tradesbook_name, timestamp){
   #posTable and tradesTable are references and changes are permanent
   #takes in a list of execution messages and change the two tables, returns nothing
   #make sure every message is fill for sure
@@ -60,7 +64,7 @@ update_trades_pnl_tables<- function (fill_msgs, positionbook, tradesbook, timest
       new_pos[new_line_index, Con_FieldName_BookVal] <- new_pos[new_line_index, Con_FieldName_Qty] * fill_price
       new_pos[new_line_index, Con_FieldName_MktVal] <- new_pos[new_line_index, Con_FieldName_BookVal]
       #update the trades table
-      insert_into_tradesbook(tradesbook, 
+      insert_into_tradesbook(env, tradesbook_name, 
                              time = timestamp,
                              sym = fill_sym,
                              side = fill_side,
@@ -92,7 +96,8 @@ update_trades_pnl_tables<- function (fill_msgs, positionbook, tradesbook, timest
             opposite_pos_qty <- new_pos[index, Con_FieldName_Qty]
             oc = Con_OpenClose_Close
             pnl = -(orig_quantity) * (orig_mktval/orig_quantity - fill_price)
-            insert_into_tradesbook(tradesbook, 
+            insert_into_tradesbook(
+                                   env, tradesbook_name, 
                                    time = timestamp,
                                    sym = fill_sym,
                                    side = fill_side,
@@ -106,7 +111,7 @@ update_trades_pnl_tables<- function (fill_msgs, positionbook, tradesbook, timest
             pnl = fill_qty * (orig_mktval/orig_quantity - fill_price)
           }  
         }
-        insert_into_tradesbook(tradesbook, 
+        insert_into_tradesbook(env, tradesbook_name, 
                                time = timestamp,
                                sym = fill_sym,
                                side = fill_side,
@@ -122,7 +127,7 @@ update_trades_pnl_tables<- function (fill_msgs, positionbook, tradesbook, timest
   
 }
 
-handle_orders <- function (orders, orderbook, marketprice, timestamp){
+handle_orders <- function (orders, env, orderbook_name, marketprice_name, timestamp){
   #orderbook is a referene (pointer in an environment), and changes are meant to be permanent
   #handles all orders (new, replace, cancels) and update the order book approriately
   #returns execution messages
@@ -141,21 +146,21 @@ handle_orders <- function (orders, orderbook, marketprice, timestamp){
   
   return(rbind(exec_replace, exec_cancel, exec_fill))
 }
-
-generate_fill_msgs <- function(ready_orders_list, marketprice, timestamp){
+#tested
+generate_fill_msgs <- function(ready_orders_list, exec_price, timestamp){
   fill_msgs <- data.frame(matrix(0, nrow(ready_orders_list), length(exec_msg_spec)))
   colnames(fill_msgs) <- exec_msg_spec
   fill_msgs[, Con_FieldName_OrdID] <- ready_orders_list[, Con_FieldName_OrdID]
-  fill_msgs[, Con_FieldName_ExecStatus] <- Con_ExecStatus_filled
+  fill_msgs[, Con_FieldName_ExecStatus] <- rep(Con_ExecStatus_filled, nrow(ready_orders_list))
   fill_msgs[, Con_FieldName_Sym] <- ready_orders_list[, Con_FieldName_Sym]
   fill_msgs[, Con_FieldName_Qty] <- ready_orders_list[, Con_FieldName_Qty]
-  fill_msgs[, Con_FieldName_AvgPrice] <- marketprice
+  fill_msgs[, Con_FieldName_AvgPrice] <- exec_price
   fill_msgs[, Con_FieldName_Side] <- ready_orders_list[, Con_FieldName_Side]
-  fill_msgs[, Con_FieldName_Time] <- timestamp
+  fill_msgs[, Con_FieldName_Time] <- rep(timestamp, nrow(ready_orders_list))
   return (fill_msgs)
 }
-
-insert_into_orderbook <-function(limit_orders, orderbook){
+#tested
+insert_into_orderbook <-function(limit_orders, env, orderbook_name){
   #orderbook is a referene (pointer in an environment), and changes are meant to be permanent
   #insert limit orders into orderbook, return nothing
   new_entries <- data.frame((matrix(0, nrow(limit_orders), length(orderbook_spec))))
@@ -167,18 +172,20 @@ insert_into_orderbook <-function(limit_orders, orderbook){
   new_entries[, Con_FieldName_Qty] <- limit_orders[, Con_FieldName_Qty]
   new_entries[, Con_FieldName_Side] <- limit_orders[, Con_FieldName_Side]
   new_entries[, Con_FieldName_OrdType] <- limit_orders[, Con_FieldName_OrdType]
-  rbind(orderbook, new_entries)
+  env[[orderbook_name]] <- rbind(env[[orderbook_name]], new_entries)
 }
 
-insert_into_tradesbook <- function(tradesbook, time, sym, qty, side, price, openclose, pnl){
-  new_line_index <- nrow(tradesbook) + 1
-  tradesbook[new_line_index, Con_FieldName_Time] <- time
-  tradesbook[new_line_index, Con_FieldName_Sym] <- sym
-  tradesbook[new_line_index, Con_FieldName_Side] <- side
-  tradesbook[new_line_index, Con_FieldName_Qty] <- qty
-  tradesbook[new_line_index, Con_FieldName_Price] <- price
-  tradesbook[new_line_index, Con_FieldName_OpenClose] <- openclose
-  tradesbook[new_line_index, Con_FieldName_Pnl] <- pnl
+#tested
+insert_into_tradesbook <- function(env, tradesbook_name, time, sym, qty, side, price, openclose, pnl){
+  new_line_index <- nrow(env[[tradesbook_name]]) + 1
+  env[[tradesbook_name]][new_line_index, Con_FieldName_Time] <- time
+  env[[tradesbook_name]][new_line_index, Con_FieldName_Sym] <- sym
+  env[[tradesbook_name]][new_line_index, Con_FieldName_Side] <- side
+  env[[tradesbook_name]][new_line_index, Con_FieldName_Qty] <- qty
+  env[[tradesbook_name]][new_line_index, Con_FieldName_Price] <- price
+  env[[tradesbook_name]][new_line_index, Con_FieldName_OpenClose] <- openclose
+  env[[tradesbook_name]][new_line_index, Con_FieldName_Pnl] <- pnl
+  
 }
 handle_cancels <- function(cancelorders, orderbook){
   #returns execution messages
