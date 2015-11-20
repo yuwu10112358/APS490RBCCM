@@ -19,24 +19,28 @@ init_cash = 100000
 #position matrix: time, asset, #of shares, book value, market value,
 global_tables = new.env()
 
-global_tables$orderbook <- data.frame(matrix(0, 0, length(orderbook_spec)))
-colnames(global_tables$orderbook) <- orderbook_spec
+global_tables[[Con_GlobalVarName_LOB]]<- data.frame(matrix(0, 0, length(orderbook_spec)))
+colnames(global_tables[[Con_GlobalVarName_LOB]]) <- orderbook_spec
 
+#the position book is a list of data frames
 init_pos <- data.frame(matrix(0, 1, length(positionbook_spec)))
 colnames(init_pos) <- positionbook_spec
 init_pos[,Con_FieldName_Sym] = Con_Sym_Cash
 init_pos[,c(Con_FieldName_Qty, Con_FieldName_BookVal, Con_FieldName_MktVal)] = init_cash
-global_tables$positionbook <- list(init_pos)
-names(global_tables$positionbook)[1] = 0
+global_tables[[Con_GlobalVarName_PositionBook]] <- list(init_pos)
+names(global_tables[[Con_GlobalVarName_PositionBook]])[1] = 0
 
-global_tables$tradesbook <- data.frame(matrix(0, 0, length(tradesbook_spec)))
+global_tables[[Con_GlobalVarName_TradesBook]] <- data.frame(matrix(0, 0, length(tradesbook_spec)))
 colnames(global_tables$tradesbook) <- tradesbook_spec
-global_tables$market_price <- list(vector())
-global_tables$bid_price <- list(vector())
-global_tables$ask_price <- list(vector())
 
-data_extraction(global_tables, "market_price", "bid_price", "ask_price")
-strategy_naive(global_tables$market_price$Date[1],global_tables$market_price$Date[length(global_tables$market_price$Date)], "AAPL")
+global_tables[[Con_GlobalVarName_MktPrice]] <- list(vector())
+global_tables[[Con_GlobalVarName_BidPrice]] <- list(vector())
+global_tables[[Con_GlobalVarName_AskPrice]] <- list(vector())
+
+data_extraction(global_tables, Con_GlobalVarName_MktPrice, Con_GlobalVarName_BidPrice, Con_GlobalVarName_AskPrice)
+strategy_naive(global_tables[[Con_GlobalVarName_MktPrice]][["Date"]][1],
+               global_tables[[Con_GlobalVarName_MktPrice]][["Date"]][length(global_tables[[Con_GlobalVarName_MktPrice]][["Date"]])], 
+               "AAPL")
 output <- output()
 
 # yay

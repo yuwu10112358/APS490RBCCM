@@ -35,7 +35,15 @@ Con_Sym_Portfolio<- "Portfolio"
 Con_OpenClose_Open <- "Open"
 Con_OpenClose_Close <- "Close"
 
+
 Con_PriceCol <- 2
+
+Con_GlobalVarName_LOB <- "PendingOrderBook"
+Con_GlobalVarName_PositionBook <- "positionbook"
+Con_GlobalVarName_TradesBook <- "tradesbook"
+Con_GlobalVarName_MktPrice <- "market_price"
+Con_GlobalVarName_BidPrice <- "bid_price"
+Con_GlobalVarName_AskPrice <- "ask_price"
 
 order_msg_spec <- c(Con_FieldName_MsgType, 
                     Con_FieldName_Sym, 

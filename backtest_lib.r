@@ -46,89 +46,86 @@ update_trades_pnl_tables<- function (fill_msgs, env, positionbook_name, tradesbo
   #make sure every message is fill for sure
   fill_msgs <- fill_msgs[fill_msgs[,Con_FieldName_ExecStatus] == Con_ExecStatus_filled,]
   #update the position tables & trades table
+
+  positionbook <- env[[positionbook_name]]
   last_pos <- positionbook[[length(positionbook)]]
   new_pos <- last_pos
   previous_cash <- new_pos[new_pos[, Con_FieldName_Sym]== Con_Sym_Cash, Con_FieldName_Qty]
   cash_change <- 0
-  for (i in 1:length(fill_msgs)){
+  for (i in 1:nrow(fill_msgs)){
     fill_sym <- fill_msgs[i, Con_FieldName_Sym]
     fill_side <- fill_msgs[i, Con_FieldName_Side]
     fill_qty <- fill_msgs[i, Con_FieldName_Qty]
     fill_price <- fill_msgs[i, Con_FieldName_AvgPrice]
     cash_change <- cash_change + (fill_side == Con_Side_Sell) * fill_qty * fill_price - (fill_side == Con_Side_Buy) * fill_qty * fill_price
-    if (length(last_pos[last_pos[,Con_FieldName_Sym] == fill_sym]) == 0){
+    #cat("hi", length((1:nrow(new_pos))[new_pos[,Con_FieldName_Sym] == fill_sym]), "\n")
+    if (length((1:nrow(new_pos))[new_pos[,Con_FieldName_Sym] == fill_sym]) == 0){
       #no positions exist for this symbol yet
-      new_line_index <- nrow(last_pos) + 1
+      new_line_index <- nrow(new_pos) + 1
       new_pos[new_line_index, Con_FieldName_Sym] <- fill_sym
       new_pos[new_line_index, Con_FieldName_Qty] <- ((fill_side == Con_Side_Buy) * fill_qty
         - (fill_side == Con_Side_Sell) * fill_qty)
       new_pos[new_line_index, Con_FieldName_BookVal] <- new_pos[new_line_index, Con_FieldName_Qty] * fill_price
       new_pos[new_line_index, Con_FieldName_MktVal] <- new_pos[new_line_index, Con_FieldName_BookVal]
       #update the trades table
-      insert_into_tradesbook(env, tradesbook_name, 
-                             time = timestamp,
-                             sym = fill_sym,
-                             side = fill_side,
-                             qty = fill_qty,
-                             price = fill_price,
-                             openclose = Con_OpenClose_Open,
-                             pnl = NA)
+      insert_into_tradesbook(env, tradesbook_name, time = timestamp, sym = fill_sym,
+                             side = fill_side, qty = fill_qty, price = fill_price,
+                             openclose = Con_OpenClose_Open, pnl = NA)
     }
     else{
       #positions exist for this symbol
-      index <- last_pos[last_pos[,Con_FieldName_Sym] == fill_msgs[i, Con_FieldName_Sym]][1]
+      index <- (1:nrow(new_pos))[new_pos[,Con_FieldName_Sym] == fill_msgs[i, Con_FieldName_Sym]][1]
       orig_quantity <- new_pos[index, Con_FieldName_Qty]
-      orig_mktval <- new_pos[index, Con_FieldName_MktVal]
+      orig_bkval <- new_pos[index, Con_FieldName_BookVal]
       new_pos[index, Con_FieldName_Qty] <- (orig_quantity + 
                   (fill_side == Con_Side_Buy) * fill_qty
                 - (fill_side == Con_Side_Sell) * fill_qty)
       new_pos[index, Con_FieldName_MktVal] <- new_pos[index, Con_FieldName_Qty] * fill_price
       new_pos[index, Con_FieldName_BookVal] <- (new_pos[index, Con_FieldName_BookVal] + 
-        ((fill_side == Con_Side_Buy) * fill_qty * fill_price
-         - (fill_side == Con_Side_Buy) * fill_qty) * fill_price)
-
+        ((fill_side == Con_Side_Buy) * fill_qty
+         - (fill_side == Con_Side_Sell) * fill_qty) * fill_price)
+      #if position is flat remove this line
+      if (new_pos[index, Con_FieldName_Qty] == 0){
+        new_pos <- !is.na(new_pos[c(1:(index - 1), (index + 1):(nrow(new_pos) + 1)),])
+      }
         oc <- Con_OpenClose_Open
         pnl <- NA
-        if ((orig_quantity < 0 && fill_side == Con_Side_Buy) || (orig_quantity > 0 && fill_side == Con_Side_Sell)){
+        quantity <- fill_qty
+        if ((orig_quantity < 0 & fill_side == Con_Side_Buy) | (orig_quantity > 0 & fill_side == Con_Side_Sell)){
           #the execution offsets a closes some positions
-          if ((new_pos[index, Con_FieldName_Qty] > 0 && fill_side == Con_Side_Buy) || 
-              (new_pos[index, Con_FieldName_Qty] < 0 && fill_side == Con_Side_Sell)){
+          if ((new_pos[index, Con_FieldName_Qty] > 0 & fill_side == Con_Side_Buy) |
+              (new_pos[index, Con_FieldName_Qty] < 0 & fill_side == Con_Side_Sell)){
             #if the execution opens up an position as well
             opposite_pos_qty <- new_pos[index, Con_FieldName_Qty]
             oc = Con_OpenClose_Close
-            pnl = -(orig_quantity) * (orig_mktval/orig_quantity - fill_price)
-            insert_into_tradesbook(
-                                   env, tradesbook_name, 
-                                   time = timestamp,
-                                   sym = fill_sym,
-                                   side = fill_side,
-                                   qty = opposite_pos_qty,
-                                   price = fill_price,
-                                   openclose = Con_OpenClose_Open,
-                                   pnl = NA)
+            pnl = -(orig_quantity) * (orig_bkval/orig_quantity - fill_price)
+            new_pos[index, Con_FieldName_BookVal] <- new_pos[index, Con_FieldName_BookVal] + pnl
+            quantity <- abs(orig_quantity)
+            #cat(quantity, " ", orig_bkval, " ", orig_quantity, " ", orig_bkval/orig_quantity, " ", fill_price, " ", pnl, "\n")
+            insert_into_tradesbook(env, tradesbook_name, time = timestamp, sym = fill_sym,
+                                   side = fill_side, qty = opposite_pos_qty, price = fill_price,
+                                   openclose = Con_OpenClose_Open, pnl = NA)
           }
           else{
             oc = Con_OpenClose_Close
-            pnl = fill_qty * (orig_mktval/orig_quantity - fill_price)
+            pnl = fill_qty * (orig_bkval/orig_quantity - fill_price)
+            new_pos[index, Con_FieldName_BookVal] <- new_pos[index, Con_FieldName_BookVal] + pnl
+            #cat(fill_qty, " ", orig_mktval, " ", orig_quantity, " ", orig_mktval/orig_quantity, " ", fill_price, " ", pnl, "\n")
           }  
         }
-        insert_into_tradesbook(env, tradesbook_name, 
-                               time = timestamp,
-                               sym = fill_sym,
-                               side = fill_side,
-                               qty = opposite_pos_qty,
-                               price = fill_price,
-                               openclose = oc,
-                               pnl = pnl)
+        insert_into_tradesbook(env, tradesbook_name, time = timestamp, sym = fill_sym,
+                                 side = fill_side, qty = quantity, price = fill_price,
+                                 openclose = oc, pnl = pnl)
+
     }
   }
-  new_pos[new_pos[, Con_FieldName_Sym]== Con_Sym_Cash, Con_FieldName_Qty] <- previous_cash + cash_change
+  new_pos[new_pos[, Con_FieldName_Sym]== Con_Sym_Cash, c(Con_FieldName_Qty, Con_FieldName_BookVal, Con_FieldName_MktVal)] <- previous_cash + cash_change
   positionbook[[length(positionbook) + 1]] <- new_pos
   names(positionbook)[length(positionbook)] <- timestamp
-  
+  env[[positionbook_name]] <- positionbook
 }
-
-handle_orders <- function (orders, env, orderbook_name, marketprice_name, timestamp){
+#tested new orders, cancel and replace not implemented
+handle_orders <- function (orders, env, orderbook_name, bid, ask, timestamp){
   #orderbook is a referene (pointer in an environment), and changes are meant to be permanent
   #handles all orders (new, replace, cancels) and update the order book approriately
   #returns execution messages
@@ -137,13 +134,15 @@ handle_orders <- function (orders, env, orderbook_name, marketprice_name, timest
   cancel_orders <- orders[orders[,Con_FieldName_MsgType] == Con_MsgType_Cancel,]
   
   mkt_new <- new_orders[new_orders[,Con_FieldName_OrdType] == Con_OrdType_Mkt, ]
+  exec_prices <- (mkt_new[, Con_FieldName_Side] == Con_Side_Buy ) * ask + 
+    (mkt_new[, Con_FieldName_Side] == Con_Side_Sell ) * bid
   limit_new <- new_orders[new_orders[,Con_FieldName_OrdType] == Con_OrdType_Limit, ]
   
-  insert_into_orderbook(limit_new, orderbook)
+  insert_into_orderbook(limit_new, env, orderbook_name)
   exec_replace <- handle_replaces(replace_orders, orderbook, timestamp)
   exec_cancel <- handle_cancels(cancel_orders, orderbook, timestamp)
   #fill must come after replace and cancel has been handled
-  exec_fill <- rbind(generate_fill_msgs(mkt_new, marketprice, timestamp), update_orderbook(marketprice, orderbook, timestamp))
+  exec_fill <- rbind(generate_fill_msgs(mkt_new, exec_prices, timestamp), update_orderbook(bid, ask, env, orderbook_name, timestamp))
   
   return(rbind(exec_replace, exec_cancel, exec_fill))
 }
@@ -188,12 +187,12 @@ insert_into_tradesbook <- function(env, tradesbook_name, time, sym, qty, side, p
   env[[tradesbook_name]][new_line_index, Con_FieldName_Pnl] <- pnl
   
 }
-handle_cancels <- function(cancelorders, orderbook){
+handle_cancels <- function(cancelorders, orderbook, timestamp){
   #returns execution messages
-  cat(cancelorders)
+  #cat(cancelorders)
 }
 
-handle_replaces <- function(replaceorders, orderbook){
+handle_replaces <- function(replaceorders, orderbook, timestamp){
   #returns execution messages
 }
 
