@@ -39,23 +39,7 @@ init_pos <- data.frame(matrix(0, 1, length(positionbook_spec)))
 colnames(init_pos) <- positionbook_spec
 init_pos[,Con_FieldName_Sym] = Con_Sym_Cash
 init_pos[,c(Con_FieldName_Qty, Con_FieldName_BookVal, Con_FieldName_MktVal)] = init_cash
-<<<<<<< HEAD
-global_tables$positionbook <- list(init_pos)
-names(global_tables$positionbook)[1] = 0
 
-global_tables$tradesbook <- data.frame(matrix(0, 0, length(tradesbook_spec)))
-colnames(global_tables$tradesbook) <- tradesbook_spec
-global_tables$market_price <- list(vector())
-global_tables$bid_price <- list(vector())
-global_tables$ask_price <- list(vector())
-
-data_extraction(global_tables, "market_price", "bid_price", "ask_price")
-NROW(global_tables$ask_price)
-NROW(global_tables$bid_price)
-strategy_naive(global_tables$market_price$Date[1],global_tables$market_price$Date[length(global_tables$market_price$Date)], "AAPL")
-output <- output(global_tables$tradesbook, global_tables$positionbook, global_tables$ask_price,
-                 global_tables$bid_price, global_tables$market_data)
-=======
 global_tables[[Con_GlobalVarName_PositionBook]] <- list(init_pos)
 names(global_tables[[Con_GlobalVarName_PositionBook]])[1] = 0
 
@@ -66,7 +50,7 @@ global_tables[[Con_GlobalVarName_MktPrice]] <- list(vector())
 global_tables[[Con_GlobalVarName_BidPrice]] <- list(vector())
 global_tables[[Con_GlobalVarName_AskPrice]] <- list(vector())
 
-data_extraction("Intraday_Test_Data1.xls", global_tables, "Sheet1", Con_GlobalVarName_MktPrice, Con_GlobalVarName_BidPrice, Con_GlobalVarName_AskPrice)
+data_extraction("AAPL.xls", global_tables, "AAPL", Con_GlobalVarName_MktPrice, Con_GlobalVarName_BidPrice, Con_GlobalVarName_AskPrice)
 strategy_naive(global_tables[[Con_GlobalVarName_MktPrice]][["Date"]][1],
                global_tables[[Con_GlobalVarName_MktPrice]][["Date"]][length(global_tables[[Con_GlobalVarName_MktPrice]][["Date"]])], 
                "AAPL", global_tables, bid= Con_GlobalVarName_BidPrice, 
@@ -74,8 +58,9 @@ strategy_naive(global_tables[[Con_GlobalVarName_MktPrice]][["Date"]][1],
                mktprice = Con_GlobalVarName_MktPrice,
                positionbook = Con_GlobalVarName_PositionBook,
                pendingbook = Con_GlobalVarName_LOB)
-output <- output(global_tables$tradebook, global_tables$positionbook, global_tables$ask_price, 
-                 global_tables$bid_price, globa_tables$market_data)
->>>>>>> origin/master
+
+# output <- output(global_tables$tradebook, global_tables$positionbook, global_tables$ask_price, 
+#                  global_tables$bid_price, globa_tables$market_data)
+
 
 #

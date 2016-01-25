@@ -38,17 +38,22 @@ update_orderbook <- function (bid, ask, env, orderbook_name, timestamp){
     (orderbook[ready_indices, Con_FieldName_Side] == Con_Side_Sell) * bid
 
   env[[orderbook_name]] <- orderbook[!ready_indices,]
-  return (generate_fill_msgs(ready_orders, executed_price, timestamp))
+  exec_msgs <- generate_fill_msgs(ready_orders, executed_price, timestamp)
+  update_trades_pnl_tables(exec_msgs, env, timestamp)
+  return (exec_msgs)
 }
 
-update_trades_pnl_tables<- function (fill_msgs, env, positionbook_name, tradesbook_name, timestamp){
+update_trades_pnl_tables<- function (fill_msgs, env, timestamp){
   #posTable and tradesTable are references and changes are permanent
   #takes in a list of execution messages and change the two tables, returns nothing
   #make sure every message is fill for sure
   fill_msgs <- fill_msgs[fill_msgs[,Con_FieldName_ExecStatus] == Con_ExecStatus_filled,]
+  if (nrow(fill_msgs) == 0){
+    return()
+  }
   #update the position tables & trades table
-
-  positionbook <- env[[positionbook_name]]
+  tradesbook_name <- Con_GlobalVarName_TradesBook
+  positionbook <- env[[Con_GlobalVarName_PositionBook]]
   last_pos <- positionbook[[length(positionbook)]]
   new_pos <- last_pos
   previous_cash <- new_pos[new_pos[, Con_FieldName_Sym]== Con_Sym_Cash, Con_FieldName_Qty]
@@ -85,10 +90,6 @@ update_trades_pnl_tables<- function (fill_msgs, env, positionbook_name, tradesbo
       new_pos[index, Con_FieldName_BookVal] <- (new_pos[index, Con_FieldName_BookVal] + 
         ((fill_side == Con_Side_Buy) * fill_qty
          - (fill_side == Con_Side_Sell) * fill_qty) * fill_price)
-      #if position is flat remove this line
-      if (new_pos[index, Con_FieldName_Qty] == 0){
-        new_pos <- !is.na(new_pos[c(1:(index - 1), (index + 1):(nrow(new_pos) + 1)),])
-      }
         oc <- Con_OpenClose_Open
         pnl <- NA
         quantity <- fill_qty
@@ -109,7 +110,8 @@ update_trades_pnl_tables<- function (fill_msgs, env, positionbook_name, tradesbo
           }
           else{
             oc = Con_OpenClose_Close
-            pnl = fill_qty * (orig_bkval/orig_quantity - fill_price)
+            pnl = (((fill_side == Con_Side_Buy) * fill_qty - (fill_side == Con_Side_Sell) * fill_qty)
+              * (orig_bkval/orig_quantity - fill_price))
             new_pos[index, Con_FieldName_BookVal] <- new_pos[index, Con_FieldName_BookVal] + pnl
             #cat(fill_qty, " ", orig_mktval, " ", orig_quantity, " ", orig_mktval/orig_quantity, " ", fill_price, " ", pnl, "\n")
           }  
@@ -120,10 +122,13 @@ update_trades_pnl_tables<- function (fill_msgs, env, positionbook_name, tradesbo
 
     }
   }
+  #if position is flat remove this line
+  new_pos <- new_pos[!new_pos[,Con_FieldName_Qty] == 0,]
+  
   new_pos[new_pos[, Con_FieldName_Sym]== Con_Sym_Cash, c(Con_FieldName_Qty, Con_FieldName_BookVal, Con_FieldName_MktVal)] <- previous_cash + cash_change
   positionbook[[length(positionbook) + 1]] <- new_pos
   names(positionbook)[length(positionbook)] <- timestamp
-  env[[positionbook_name]] <- positionbook
+  env[[Con_GlobalVarName_PositionBook]] <- positionbook
 }
 #tested new orders, cancel and replace not implemented
 handle_orders <- function (orders, env, orderbook_name, bid, ask, timestamp){
@@ -144,7 +149,7 @@ handle_orders <- function (orders, env, orderbook_name, bid, ask, timestamp){
   exec_cancel <- handle_cancels(cancel_orders, orderbook, timestamp)
   #fill must come after replace and cancel has been handled
   exec_fill <- rbind(generate_fill_msgs(mkt_new, exec_prices, timestamp), update_orderbook(bid, ask, env, orderbook_name, timestamp))
-  
+  update_trades_pnl_tables(exec_fill, env, timestamp)
   return(rbind(exec_replace, exec_cancel, exec_fill))
 }
 #tested
