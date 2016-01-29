@@ -1,8 +1,12 @@
+rm(list = ls())
 source('constants.r')
 source('strategy_lib.r')
 source('backtest_lib.r')
 library(XLConnect)
-library(knitr)
+#library(knitr)
+
+
+
 
 # notes 2015-11-20
 
@@ -59,8 +63,8 @@ strategy_naive(global_tables[[Con_GlobalVarName_MktPrice]][["Date"]][1],
                positionbook = Con_GlobalVarName_PositionBook,
                pendingbook = Con_GlobalVarName_LOB)
 
-# output <- output(global_tables$tradebook, global_tables$positionbook, global_tables$ask_price, 
-#                  global_tables$bid_price, globa_tables$market_data)
+output <- output(global_tables$tradesbook, global_tables$positionbook, global_tables$ask_price, 
+                  global_tables$bid_price, globa_tables$market_data)
 
 
-#
+
