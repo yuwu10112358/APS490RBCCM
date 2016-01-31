@@ -24,7 +24,7 @@ bid_prices <- global_tables$bid_price
 # find the unique stocks that have been traded over the duration 
 stock_list <- unique(as.vector(tradesbook$Symbol))
 
-# Set up the data frame which will store the cumulative pnl values for each stock and portfolio. Verify QuantityOwned 
+# Set up the data frame which will store the cumulative pnl values for each stock and portfolio 
 Pnl_df <- data.frame(Symbol=character(), DateTime=as.Date(character()), BidAskPrice=character(), 
                      BookValue=integer(), Side=integer(), Quantity = integer(),
                      Open.Close = character(), PnLStock = integer(), Cash = integer(),
@@ -99,9 +99,11 @@ for (i in 1:NROW(Pnl_df)){
   
   # multiply the book value by -1 to obtain a posititve quantity
   if (curr_side == 1){
-    curr_pnl <- (((Pnl_df[i, "BidAskPrice"]-Pnl_df[i, "BookValue"]) / (Pnl_df[i, "BookValue"]))) * 100
+    curr_pnl <- (Pnl_df[i, "BidAskPrice"] - Pnl_df[i, "BookValue"])*Pnl_df[i, "Quantity"]
   } else {
-    curr_pnl <- (((Pnl_df[i, "BidAskPrice"]-(Pnl_df[i, "BookValue"]*-1)) / (Pnl_df[i, "BookValue"]))) * 100
+    book_value <- Pnl_df[i, "BookValue"]*-1
+    short_qty <- Pnl_df[i, "Quantity"]*-1
+    curr_pnl <- (Pnl_df[i, "BidAskPrice"] - book_value*short_qty)*-1
   }
   
   # find cum. value. Ensure that the cumulative value is only carried from previous if it was the same stock
