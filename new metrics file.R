@@ -3,7 +3,7 @@
 ### TESTED
 tradesbook <- global_tables$tradesbook
 # manually add a row into the tradebook since the naive strategy doesn't empty inventory at end of session
-new_row <- c(1444071660, "AAPL", 1, 1, 110.92, "Close", .135)
+new_row <- c(1444071660, "AAPL", 1, 1, 110.92, "Close", .15)
 tradesbook <- rbind(tradesbook, new_row)
 positionbook <- global_tables$positionbook
 ### TESTED
@@ -75,6 +75,11 @@ for (i in 1:length(stock_list)){
           }
           if (stock_matrix[i, "Date"] == end_time_date) {
             curr_pos <- "Close"
+            if (curr_side == 1){
+              curr_side == 2
+            } else {
+              curr_side == 1
+            }
           }
           Pnl_df <- rbind(Pnl_df, data.frame(Symbol = stock_name, DateTime = stock_matrix[i, "Date"],
                                              BidAskPrice = bidask_price, 
@@ -171,23 +176,20 @@ for (i in 1:NROW(time_list)){
 # calculate cumulative portfolio pnl at each time step
 
 for (i in 1:NROW(time_list)){
-  # must clarify formula for cumulative PnL
-  if (i == 1){
-    prev_pnl <- 0
-    curr_pnl <- ((time_list[i, "PortfolioValue"] - init_cash)/init_cash)*100
-    time_list[i, "PnLPortfolio"] <- prev_pnl + curr_pnl
-  } else {
-    prev_pnl <- time_list[i-1, "PnLPortfolio"]
-    curr_pnl <- ((time_list[i, "PortfolioValue"] - time_list[i-1, "PortfolioValue"])/time_list[i-1, "PortfolioValue"]*100)
-    time_list[i, "PnLPortfolio"] <-  prev_pnl + curr_pnl
-  }
+  curr_pnl <- time_list[i, "PortfolioValue"] - init_cash
+  time_list[i, "PnLPortfolio"] <- curr_pnl
 }
+
+dt <- c(0, time_list[, "PnLPortfolio"])
+time_list[, "CumPnLPortfolio"] <- cumsum(time_list[, "PnLPortfolio"])
+
 ### TESTED
 
 ### TESTED
 # calculate the final cumulative PnL of the portfolio 
 
 cumulative_pnl_portfolio <- time_list[NROW(time_list), "PnLPortfolio"]
+
 ### TESTED
 
 ### TESTED
@@ -202,6 +204,7 @@ for (i in 1:length(stock_list)){
   cumulative_pnl_dataframe <- rbind(cumulative_pnl_dataframe, data.frame(Symbol = stock_name,
                                                                          CumPnL = cum_pnl))
 }
+
 ### TESTED
 
 ### TESTED
@@ -281,28 +284,26 @@ for (i in 1:length(stock_list)){
 percent_trades_profitable <- (sum(filter_pnL$PnL>0)/NROW(filter_pnL))*100
 ### TESTED
 
+### TESTED
 # calculate maximum drawdown and maximum drawdown period
 
-# calculate annualised return
+library(tseries)
+mxdrwdown <- maxdrawdown(time_list$PortfolioValue)
+MDD <- mxdrwdown$maxdrawdown
+MDD_from <- time_list[mxdrwdown$from, "PortfolioValue"]
+MDD_to <- time_list[mxdrwdown$to, "PortfolioValue"]
+MDD_peak <- max(c(MDD_from, MDD_to))
+MDD_trough <- min(c(MDD_from, MDD_to))
+MDD_perc <- (MDD_trough - MDD_peak)/(MDD_peak)*100
+MDD_period <- c(time_list[mxdrwdown$from, "DateTime"], time_list[mxdrwdown$to, "DateTime"])
+### TESTED
 
-# assume time difference is in years
+# calculate annualised portfolio return. Need to multiply individual stock returns by their weights 
 
-days_in_year <- 365
 
-init_cash <- init_cash
-end_cash <- Pnl_df[NROW(Pnl_df), "Cash"]
-return1 <- ((end_cash - init_cash)/(init_cash))*100
 
-init_day <- Pnl_df[1, "DateTime"]
-end_day <- Pnl_df[NROW(Pnl_df), "DateTime"]
-holding_period <- end_day - init_day
+# calculate annualised portfolio return. Need to multiply covariances by their weights 
 
-annualised_return <- (days_in_year * (return1))/as.integer(holding_period)
-
-# calculate annualised standard deviation. Need more clarification how to calculate 
-
-stdev <- sd(Pnl_df$Portfolio)
-annualised_stdev <- (days_in_year * (stdev))/as.integer(holding_period)
 
 # calculate Sharpe Ratio. Need to access the market dataframe whih stores data of the S&P500
 
@@ -368,8 +369,8 @@ no_stocks <- length(stock_list)
 summary_statistics_all <- data.frame(NumberofTradesTotal = total_trades, AvgTradesPerDay = average_daily_trades,
                                      CumPnLPortfolio = cumulative_pnl_portfolio, AvgDailyPnL = average_daily_PnL,
                                      PctDaysProfitable = percent_profitable_days, AvgPnLAllTrades = average_PnL_all_trades,
-                                     PctTradesProfitable = percent_trades_profitable, MaxDrawdown = maximum_drawdown,
-                                     MaxDrawdownPeriod = maximum_drawdown_period, AnnualizedReturn = annualised_return,
+                                     PctTradesProfitable = percent_trades_profitable, MaxDrawdown = MDD_perc,
+                                     MaxDrawdownPeriod = MDD_period, AnnualizedReturn = annualised_return,
                                      AnnualizedStdev = annualised_stdev, NumberofStocksInPortfolio = no_stocks) 
 
 ### TESTED
