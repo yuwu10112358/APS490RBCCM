@@ -6,18 +6,23 @@ install.packages("RWeka")
 library( "RWeka" )
 install.packages("XLConnect")
 library(XLConnect)
-#install.packages("xts")
-#library( "xts" )
 
-# How to use data extraction:
 
+# Instructions on how to use get data
+# 1.Run the code separately
+# 2. Import data
+
+
+#=================================================================
+# available stocks: AC,BNS,BMO,SPXTSE
 env <- global_tables
-symbol <- "AC" # the symbol is the same as the excel tab name
+symbol <- "AC" 
+# the symbol is the same as the excel tab name
 tick_name <-"AC_tick"
 bid_name <-"AC_bid"
 ask_name <-"AC_ask"
-filename <- "/Users/jewelho/dropbox/Capstone_Data_TSX/C_1to5.xlsm"
-
+filename <- "/Users/jewelho/dropbox/Capstone_Data_TSX/TSXdatafile.xlsm"
+#=======================================================================
 data_extraction(filename, env, symbol, tick_name, bid_name, ask_name)
 data_extraction <- function(filename, env, symbol, tick_name, bid_name, ask_name)
 { 
@@ -47,16 +52,15 @@ data_extraction <- function(filename, env, symbol, tick_name, bid_name, ask_name
   # only consider complete cases (remove NA)
   #env[[bid_name]][complete.cases(env[[bid_name]]),]
   #env[[ask_name]][complete.cases(env[[ask_name]]),]
-  
 }
 
 EquityList <- c("AC_tick","AC_bid","AC_ask")
-for (Name in EquityList) {
-  print(Name)
-  data_cleaning(filename, env, symbol, tick_name, bid_name, ask_name,Name)
-  #data_cleaning2(filename, env, symbol, tick_name, bid_name, ask_name,Name)
-}
 
+#EquityList <- c("tick","bid","ask")
+for (Name in EquityList) {
+  data_cleaning(filename, env, symbol, tick_name, bid_name, ask_name,Name)
+  data_cleaning2(filename, env, symbol, tick_name, bid_name, ask_name,Name)
+}
 
 
 data_cleaning(filename, env, symbol, tick_name, bid_name, ask_name,Name)
@@ -65,21 +69,12 @@ data_cleaning <- function(filename, env, symbol, tick_name, bid_name, ask_name,N
   # Remove NA col
   maxrow <- nrow(env[[Name]])
   env[[Name]] = env[[Name]][complete.cases(env[[Name]][1:maxrow,] ) ,]
-  #maxrow <- nrow(env[[tick_name]])
-  #env[[tick_name]] = env[[tick_name]][complete.cases(env[[tick_name]][1:maxrow,] ) ,]
-  #maxrow <- nrow(env[[bid_name]])
-  #env[[bid_name]] = env[[bid_name]][complete.cases(env[[bid_name]][1:maxrow,] ) ,]
-  #maxrow <- nrow(env[[ask_name]])
-  #env[[ask_name]] = env[[ask_name]][complete.cases(env[[ask_name]][1:maxrow,] ) ,]
-  
   # maxrow <- nrow(env[[tick_name]])
   # global_tables[["ABX_tick"]] = global_tables[["ABX_tick"]][complete.cases(global_tables[["ABX_tick"]][1:maxrow,] ) ,]
   
-  
 }
 
-
-# head(global_tables[["ABX_bid"]])
+tail(global_tables[["AC_tick"]])
 
 data_cleaning2 <- function(filename, env, symbol, tick_name, bid_name, ask_name,Name){
   # Remove close market data
@@ -87,18 +82,21 @@ data_cleaning2 <- function(filename, env, symbol, tick_name, bid_name, ask_name,
   Opentime <-strftime(Opentime, format="%H:%M:%S")
   Closetime <- as.POSIXct("2000-01-01 16:00:00", tz = "EST")
   Closetime <-strftime(Closetime, format="%H:%M:%S")
+  row_to_keep <- logical(length = nrow(env[[Name]]) )
   
-  row_to_keep = c(nrow(env[[Name]]))
   for (i in 1:nrow(env[[Name]])){ 
     temp <- strftime(env[[Name]][i,1], format="%H:%M:%S")
     if ( temp >= Opentime && temp <= Closetime){
       row_to_keep[i] <- TRUE
+      #print("True",strftime(env[[Name]][i,1], format="%H:%M:%S"))
     }else {
       row_to_keep[i] <- FALSE
+      #print("False",strftime(env[[Name]][i,1], format="%H:%M:%S"))
     }
   }
   env[[Name]] = env[[Name]][row_to_keep,]
 }
+
 
 
  #tested
