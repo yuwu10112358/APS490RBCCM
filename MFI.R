@@ -86,5 +86,7 @@ SMA<- function(currentTime, duration, symbol, env, datatype,Close){
 ##}
 
 
-
-
+ask_price <- global_tables$ask_price
+bid_price <- global_tables$bid_price
+ask_price[1:10, "HIGH"]
+something<-(global_tables$ask_price)[1:3, "HIGH"]
