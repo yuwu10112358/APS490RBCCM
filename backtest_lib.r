@@ -9,29 +9,44 @@ library(XLConnect)
 
 
 # Instructions on how to use get data
-# 1.Run the code separately
-# 2. Import data
-
+# 1.Run the code separately (or else it will take a long time to run)
+# 2.Load data: change stock symbols then run "data_extraction"
+# 3.Data cleaning: Run data_cleaning and data_cleaning2 separately
+# 4.Done. Want to check what the data looks like? Run the commented lines below
+# head(global_tables[["BMO_tick"]])
+# tail(global_tables[["SPTSX_ask"]][1,1])
 
 #=================================================================
-# available stocks: AC,BNS,BMO,SPXTSE
+# available stocks: AC,BNS,BMO,SPTSX
 env <- global_tables
-symbol <- "AC" 
+symbol <- "SPTSX" 
 # the symbol is the same as the excel tab name
-tick_name <-"AC_tick"
-bid_name <-"AC_bid"
-ask_name <-"AC_ask"
-filename <- "/Users/jewelho/dropbox/Capstone_Data_TSX/TSXdatafile.xlsm"
+tick_name <-"SPTSX_tick"
+bid_name <-"SPTSX_bid"
+ask_name <-"SPTSX_ask"
+filename <- "/Users/jewelho/dropbox/Capstone_Data_TSX/TSXdatafile.xlsx"
 #=======================================================================
+
+
+EquityList <- c(tick_name,bid_name,ask_name)
 data_extraction(filename, env, symbol, tick_name, bid_name, ask_name)
+
+
+for (Name in EquityList) {
+  data_cleaning(filename, env, symbol, tick_name, bid_name, ask_name,Name)
+  #data_cleaning2(filename, env, symbol, tick_name, bid_name, ask_name,Name)
+}
+
+
+
+
+
 data_extraction <- function(filename, env, symbol, tick_name, bid_name, ask_name)
 { 
   #Definition: This function creates tables (tick, bid and ask) of stock prices. It imports stock price data from an Excel file that links to the Bloomberg terminal.
   #Requirements:
   #The excel sheet contains 3 tables arranged in order: Tick, Ask, Bid price.
   #Number of columns in each table can vary
-  
-  
   file <- readWorksheetFromFile(filename, 
                                 sheet= symbol, 
                                 startRow = 3,
@@ -53,18 +68,6 @@ data_extraction <- function(filename, env, symbol, tick_name, bid_name, ask_name
   #env[[bid_name]][complete.cases(env[[bid_name]]),]
   #env[[ask_name]][complete.cases(env[[ask_name]]),]
 }
-
-EquityList <- c("AC_tick","AC_bid","AC_ask")
-
-#EquityList <- c("tick","bid","ask")
-for (Name in EquityList) {
-  data_cleaning(filename, env, symbol, tick_name, bid_name, ask_name,Name)
-  data_cleaning2(filename, env, symbol, tick_name, bid_name, ask_name,Name)
-}
-
-
-data_cleaning(filename, env, symbol, tick_name, bid_name, ask_name,Name)
-
 data_cleaning <- function(filename, env, symbol, tick_name, bid_name, ask_name,Name){
   # Remove NA col
   maxrow <- nrow(env[[Name]])
@@ -73,9 +76,6 @@ data_cleaning <- function(filename, env, symbol, tick_name, bid_name, ask_name,N
   # global_tables[["ABX_tick"]] = global_tables[["ABX_tick"]][complete.cases(global_tables[["ABX_tick"]][1:maxrow,] ) ,]
   
 }
-
-tail(global_tables[["AC_tick"]])
-
 data_cleaning2 <- function(filename, env, symbol, tick_name, bid_name, ask_name,Name){
   # Remove close market data
   Opentime <- as.POSIXct("2000-01-01 09:30:00", tz = "EST")
@@ -88,14 +88,14 @@ data_cleaning2 <- function(filename, env, symbol, tick_name, bid_name, ask_name,
     temp <- strftime(env[[Name]][i,1], format="%H:%M:%S")
     if ( temp >= Opentime && temp <= Closetime){
       row_to_keep[i] <- TRUE
-      #print("True",strftime(env[[Name]][i,1], format="%H:%M:%S"))
     }else {
       row_to_keep[i] <- FALSE
-      #print("False",strftime(env[[Name]][i,1], format="%H:%M:%S"))
+      
     }
   }
   env[[Name]] = env[[Name]][row_to_keep,]
 }
+
 
 
 
