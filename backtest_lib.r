@@ -1,6 +1,7 @@
 source('constants.r')
-setwd("/Users/jewelho/Desktop/Capstone/Code/APS490RBCCM")
-# possible errors:
+# setwd("/Users/jewelho/Desktop/Capstone/Code/APS490RBCCM")
+# The "RWeka" package and the options gives more space to store the data
+# XLConnect package is for "readWorksheetFromFile" function
 options( java.parameters = "-Xmx6g" )
 install.packages("RWeka")
 library( "RWeka" )
@@ -9,6 +10,7 @@ library(XLConnect)
 
 
 # Instructions on how to use get data
+# 0. CHANGE WORKING DIRECTOR & "filename" 
 # 1.Run the code separately (or else it will take a long time to run)
 # 2.Load data: change stock symbols then run "data_extraction"
 # 3.Data cleaning: Run data_cleaning and data_cleaning2 separately
