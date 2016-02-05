@@ -45,6 +45,18 @@ Con_GlobalVarName_MktPrice <- "market_price"
 Con_GlobalVarName_BidPrice <- "bid_price"
 Con_GlobalVarName_AskPrice <- "ask_price"
 
+Con_Data_Tick_Suffix <- "_tick"
+Con_Data_Ask_Suffix <- "_ask"
+Con_Data_Bid_Suffix <- "_bid"
+Con_Data_ColName_Date <- "Date"
+Con_Data_ColName_Open <- "OPEN"
+Con_Data_ColName_High <- "HIGH"
+Con_Data_ColName_Low <- "Low"
+Con_Data_ColName_LastPrice <- "LAST_PRICE"
+Con_Data_ColName_NumTicks <- "NUMBER_TICKS"
+Con_Data_ColName_Volume <- "VOLUME"
+Con_Data_ColName_Value <- "VALUE"
+
 order_msg_spec <- c(Con_FieldName_MsgType, 
                     Con_FieldName_Sym, 
                     Con_FieldName_Price,

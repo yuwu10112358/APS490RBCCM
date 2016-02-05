@@ -3,9 +3,9 @@ source('constants.r')
 # The "RWeka" package and the options gives more space to store the data
 # XLConnect package is for "readWorksheetFromFile" function
 options( java.parameters = "-Xmx6g" )
-install.packages("RWeka")
+#install.packages("RWeka")
 library( "RWeka" )
-install.packages("XLConnect")
+#install.packages("XLConnect")
 library(XLConnect)
 
 
@@ -20,26 +20,37 @@ library(XLConnect)
 
 #=================================================================
 # available stocks: AC,BNS,BMO,SPTSX
-env <- global_tables
-symbol <- "SPTSX" 
+#env <- global_tables
+#symbol <- "SPTSX" 
 # the symbol is the same as the excel tab name
-tick_name <-"SPTSX_tick"
-bid_name <-"SPTSX_bid"
-ask_name <-"SPTSX_ask"
-filename <- "/Users/jewelho/dropbox/Capstone_Data_TSX/TSXdatafile.xlsx"
+#tick_name <-"SPTSX_tick"
+#bid_name <-"SPTSX_bid"
+#ask_name <-"SPTSX_ask"
+filename <- "../data/TSXdatafile.xls"
 #=======================================================================
 
 
-EquityList <- c(tick_name,bid_name,ask_name)
-data_extraction(filename, env, symbol, tick_name, bid_name, ask_name)
+# EquityList <- c(tick_name,bid_name,ask_name)
+# data_extraction(filename, env, symbol, tick_name, bid_name, ask_name)
+# 
+# 
+# for (Name in EquityList) {
+#   data_cleaning(filename, env, symbol, tick_name, bid_name, ask_name,Name)
+#   #data_cleaning2(filename, env, symbol, tick_name, bid_name, ask_name,Name)
+# }
 
-
-for (Name in EquityList) {
-  data_cleaning(filename, env, symbol, tick_name, bid_name, ask_name,Name)
-  #data_cleaning2(filename, env, symbol, tick_name, bid_name, ask_name,Name)
+import_data <-  function (env, symbol){
+  suffix <- c(Con_Data_Tick_Suffix, Con_Data_Bid_Suffix, Con_Data_Ask_Suffix)
+  equity_list <- paste(symbol, suffix, sep = "")
+  cat('importing ', symbol, ' from ', filename, "\n")
+  data_extraction(filename, env, symbol, equity_list[1], equity_list[2], equity_list[3])
+  
+  for (Name in equity_list) {
+    cat('cleaning ', Name, "\n")
+    data_cleaning(env, symbol, Name)
+    data_cleaning2(env, symbol, Name)
+  }
 }
-
-
 
 
 
@@ -70,7 +81,7 @@ data_extraction <- function(filename, env, symbol, tick_name, bid_name, ask_name
   #env[[bid_name]][complete.cases(env[[bid_name]]),]
   #env[[ask_name]][complete.cases(env[[ask_name]]),]
 }
-data_cleaning <- function(filename, env, symbol, tick_name, bid_name, ask_name,Name){
+data_cleaning <- function(env, symbol, Name){
   # Remove NA col
   maxrow <- nrow(env[[Name]])
   env[[Name]] = env[[Name]][complete.cases(env[[Name]][1:maxrow,] ) ,]
@@ -78,7 +89,7 @@ data_cleaning <- function(filename, env, symbol, tick_name, bid_name, ask_name,N
   # global_tables[["ABX_tick"]] = global_tables[["ABX_tick"]][complete.cases(global_tables[["ABX_tick"]][1:maxrow,] ) ,]
   
 }
-data_cleaning2 <- function(filename, env, symbol, tick_name, bid_name, ask_name,Name){
+data_cleaning2 <- function(env, symbol, Name){
   # Remove close market data
   Opentime <- as.POSIXct("2000-01-01 09:30:00", tz = "EST")
   Opentime <-strftime(Opentime, format="%H:%M:%S")
