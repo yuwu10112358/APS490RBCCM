@@ -58,7 +58,7 @@ Con_Data_Bid_Suffix <- "_bid"
 Con_Data_ColName_Date <- "Date"
 Con_Data_ColName_Open <- "OPEN"
 Con_Data_ColName_High <- "HIGH"
-Con_Data_ColName_Low <- "Low"
+Con_Data_ColName_Low <- "LOW"
 Con_Data_ColName_LastPrice <- "LAST_PRICE"
 Con_Data_ColName_NumTicks <- "NUMBER_TICKS"
 Con_Data_ColName_Volume <- "VOLUME"
@@ -106,8 +106,8 @@ mkt_quote_spec <- c(Con_FieldName_Sym,
                     Con_FieldName_CurrentBid,
                     Con_FieldName_CurrentAsk,
                     Con_FieldName_CurrentTick,
-                    Con_FieldName_HighestBid,
-                    Con_FieldName_LowestAsk,
-                    Con_Data_ColName_NumTicks,
-                    Con_Data_ColName_Volume,
-                    Con_Data_ColName_Value)
+                    Con_FieldName_LastHighestBid,
+                    Con_FieldName_LastLowestAsk,
+                    Con_Data_ColName_LastNumTicks,
+                    Con_Data_ColName_LastVolume,
+                    Con_Data_ColName_LastValue)
