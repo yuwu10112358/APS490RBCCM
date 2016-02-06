@@ -20,7 +20,14 @@ Con_FieldName_BookVal = "BookValue"
 Con_FieldName_MktVal = "MarketValue"
 Con_FieldName_OpenClose = "Open/Close"
 Con_FieldName_Pnl = "PnL"
-
+Con_FieldName_CurrentBid = "CurrentBid"
+Con_FieldName_CurrentAsk = "CurrentAsk"
+Con_FieldName_CurrentTick = "CurrentTick"
+Con_FieldName_HighestBid = "HighestBid"
+Con_FieldName_LowestAsk = "LowestAsk"
+Con_FieldName_NumTicks = "NumTicks"
+Con_FieldName_Vol = "Volume"
+Con_FieldName_Value = "Value"
 
 Con_ExecStatus_filled <- 2
 Con_Side_Buy <- 1
@@ -94,3 +101,13 @@ tradesbook_spec <- c(Con_FieldName_Time,
                      Con_FieldName_Price,
                      Con_FieldName_OpenClose,
                      Con_FieldName_Pnl)
+
+mkt_quote_spec <- c(Con_FieldName_Sym,
+                    Con_FieldName_CurrentBid,
+                    Con_FieldName_CurrentAsk,
+                    Con_FieldName_CurrentTick,
+                    Con_FieldName_HighestBid,
+                    Con_FieldName_LowestAsk,
+                    Con_Data_ColName_NumTicks,
+                    Con_Data_ColName_Volume,
+                    Con_Data_ColName_Value)
