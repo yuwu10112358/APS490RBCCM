@@ -1,11 +1,11 @@
 source('constants.r')
-# setwd("/Users/jewelho/Desktop/Capstone/Code/APS490RBCCM")
+#setwd("/Users/jewelho/Desktop/Capstone/Code")
 # The "RWeka" package and the options gives more space to store the data
 # XLConnect package is for "readWorksheetFromFile" function
 options( java.parameters = "-Xmx6g" )
-#install.packages("RWeka")
+install.packages("RWeka")
 library( "RWeka" )
-#install.packages("XLConnect")
+install.packages("XLConnect")
 library(XLConnect)
 
 
@@ -20,13 +20,14 @@ library(XLConnect)
 
 #=================================================================
 # available stocks: AC,BNS,BMO,SPTSX
-#env <- global_tables
+env <- global_tables
+symbol <- "BNS"
 #symbol <- "SPTSX" 
 # the symbol is the same as the excel tab name
 #tick_name <-"SPTSX_tick"
 #bid_name <-"SPTSX_bid"
 #ask_name <-"SPTSX_ask"
-filename <- "../data/TSXdatafile.xls"
+filename <- "../data/TSXdatafile.xlsx"
 #=======================================================================
 
 
@@ -38,6 +39,7 @@ filename <- "../data/TSXdatafile.xls"
 #   data_cleaning(filename, env, symbol, tick_name, bid_name, ask_name,Name)
 #   #data_cleaning2(filename, env, symbol, tick_name, bid_name, ask_name,Name)
 # }
+import_data(env, symbol)
 
 import_data <-  function (env, symbol){
   suffix <- c(Con_Data_Tick_Suffix, Con_Data_Bid_Suffix, Con_Data_Ask_Suffix)
@@ -109,6 +111,42 @@ data_cleaning2 <- function(env, symbol, Name){
   env[[Name]] = env[[Name]][row_to_keep,]
 }
 
+
+# symbols 
+# return (Nstocks * rows) 
+# if no quote then return empty
+# aftermarket hour, 930/4 then return empty
+# 9:31 - 3:59
+# 9:30 then opening tick for 5 prices, val/vol/tick = 0
+# 4:00 close tick, 
+
+
+getquotes<-function(env,symbol,time){
+  
+  datatable_name_tick <- paste(symbol, Con_Data_Tick_Suffix, sep = "")
+  datatable_name_bid <- paste(symbol, Con_Data_Bid_Suffix, sep = "")
+  datatable_name_ask <- paste(symbol, Con_Data_Ask_Suffix, sep = "")
+  
+  #datable_table <- c(datatable_name_tick, datatable_name_bid, datatable_name_ask)
+  #datable_list <- paste(symbol, datable_table, sep = "")
+
+  mkt_quote = data.frame(matrix(NA, length(symbol), length(mkt_quote_spec)))
+  colnames(mkt_quote) <- mkt_quote_spec
+  
+  mkt_quote[symbol, Con_FieldName_Sym] <- symbol
+  mkt_quote[symbol, Con_FieldName_CurrentBid] <- env[[datatable_name_bid]][[Con_Data_ColName_Open]][[time]]
+  mkt_quote[symbol, Con_FieldName_CurrentAsk] <- env[[datatable_name_ask]][[Con_Data_ColName_Open]][[time]]
+  mkt_quote[symbol, Con_FieldName_CurrentTick] <- env[[datatable_name_tick]][[Con_Data_ColName_Open]][[time]]
+  mkt_quote[symbol, Con_FieldName_LastHighestBid] <- env[[datatable_name_bid]][[Con_Data_ColName_High]][[time-1]]
+  mkt_quote[symbol, Con_FieldName_LastLowestAsk] <- env[[datatable_name_ask]][[Con_Data_ColName_Low]][[time-1]]
+  mkt_quote[symbol, Con_Data_ColName_LastNumTicks] <- env[[datatable_name_tick]][[Con_Data_ColName_NumTicks]][[time-1]]
+  mkt_quote[symbol, Con_Data_ColName_LastVolume] <- env[[datatable_name_tick]][[Con_Data_ColName_Volume]][[time-1]]
+  mkt_quote[symbol, Con_Data_ColName_LastValue] <- env[[datatable_name_tick]][[Con_Data_ColName_Value]][[time-1]]
+
+  
+  
+  # this function returns an updated mkt_quote table
+  }
 
 
 
