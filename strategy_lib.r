@@ -1,4 +1,4 @@
-source('backtest_lib.r')
+# source('backtest_lib.r')
 
 #####################   Snow      ##########################
 strategy_naive <- function(starttime,endtime, symbol, env, bid, ask, mktprice, positionbook, pendingbook){
