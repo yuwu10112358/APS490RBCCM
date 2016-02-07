@@ -33,6 +33,7 @@ init_cash = 100000
 #order book format: orderID, time, symbol, price, quantity, side, ordtype
 #trade matrix format: time, symbol, side, quantity, price, open/close, pnl
 #position matrix: time, asset, #of shares, book value, market value,
+datafile_name = "../data/TSXdatafile.xls"
 global_tables = new.env()
 
 global_tables[[Con_GlobalVarName_LOB]]<- data.frame(matrix(0, 0, length(orderbook_spec)))
@@ -50,6 +51,7 @@ names(global_tables[[Con_GlobalVarName_PositionBook]])[1] = 0
 global_tables[[Con_GlobalVarName_TradesBook]] <- data.frame(matrix(0, 0, length(tradesbook_spec)))
 colnames(global_tables[[Con_GlobalVarName_TradesBook]]) <- tradesbook_spec
 
+<<<<<<< HEAD
 global_tables[[Con_GlobalVarName_MktPrice]] <- list(vector())
 global_tables[[Con_GlobalVarName_BidPrice]] <- list(vector())
 global_tables[[Con_GlobalVarName_AskPrice]] <- list(vector())
@@ -66,6 +68,22 @@ strategy_naive(global_tables[[Con_GlobalVarName_MktPrice]][["Date"]][1],
 
 output <- output(global_tables$tradesbook, global_tables$positionbook, global_tables$ask_price, 
                   global_tables$bid_price, globa_tables$market_data)
+=======
+import_data(global_tables, "BNS")
+
+# data_extraction(datafile_name, global_tables, "AAPL", Con_GlobalVarName_MktPrice, Con_GlobalVarName_BidPrice, Con_GlobalVarName_AskPrice)
+# strategy_naive(global_tables[[Con_GlobalVarName_MktPrice]][["Date"]][1],
+#                global_tables[[Con_GlobalVarName_MktPrice]][["Date"]][length(global_tables[[Con_GlobalVarName_MktPrice]][["Date"]])], 
+#                "AAPL", global_tables, bid= Con_GlobalVarName_BidPrice, 
+#                ask = Con_GlobalVarName_AskPrice, 
+#                mktprice = Con_GlobalVarName_MktPrice,
+#                positionbook = Con_GlobalVarName_PositionBook,
+#                pendingbook = Con_GlobalVarName_LOB)
+
+
+#output <- output(global_tables$tradesbook, global_tables$positionbook, global_tables$ask_price, 
+#                  global_tables$bid_price, globa_tables$market_data)
+>>>>>>> origin/master
 
 
 

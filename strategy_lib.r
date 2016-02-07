@@ -3,7 +3,8 @@
 #####################   Snow      ##########################
 strategy_naive <- function(starttime,endtime, symbol, env, bid, ask, mktprice, positionbook, pendingbook){
   # Active portion of strategy
-  actiontime <- c(starttime + 60 * (0: 420), endtime) # Times to perform active portion
+  
+  actiontime <- env[[mktprice]][["Date"]] # Times to perform active portion
 
   actcounter <- 1 # count for which action time we are on
 
@@ -17,11 +18,11 @@ strategy_naive <- function(starttime,endtime, symbol, env, bid, ask, mktprice, p
   # Order number initialize
   ordercounter <- 1
 
-  looprow <- 60 * (endtime-starttime) # Assuming starttime and endtime are times in seconds
+  looprow <- length(env[[mktprice]][["Date"]]) # Assuming starttime and endtime are times in seconds
 
   #order format: msgtype, symbol, price, amount, b/s, market/limit/stop, refnumber, time
   #response format: orderID, DateCreated, DateExecuted, Symbol, Price, amount, b/s, market/limit/stop
-  
+  cat(looprow)
   for (i in 1:looprow){
     #check market condition
 
@@ -97,6 +98,7 @@ strategy_naive <- function(starttime,endtime, symbol, env, bid, ask, mktprice, p
       }
     }
   }
+  
 }
 
 passiveupdate <- function(response){
