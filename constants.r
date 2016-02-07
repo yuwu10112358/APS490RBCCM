@@ -23,11 +23,11 @@ Con_FieldName_Pnl = "PnL"
 Con_FieldName_CurrentBid = "CurrentBid"
 Con_FieldName_CurrentAsk = "CurrentAsk"
 Con_FieldName_CurrentTick = "CurrentTick"
-Con_FieldName_HighestBid = "HighestBid"
-Con_FieldName_LowestAsk = "LowestAsk"
-Con_FieldName_NumTicks = "NumTicks"
-Con_FieldName_Vol = "Volume"
-Con_FieldName_Value = "Value"
+Con_FieldName_LastHighestBid = "HighestBid"
+Con_FieldName_LastLowestAsk = "LowestAsk"
+Con_Data_ColName_LastNumTicks = "NumTicks"
+Con_Data_ColName_LastVolume = "Volume"
+Con_Data_ColName_LastValue = "Value"
 
 Con_ExecStatus_filled <- 2
 Con_Side_Buy <- 1

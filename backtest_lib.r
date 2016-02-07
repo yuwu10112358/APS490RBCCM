@@ -1,11 +1,11 @@
 source('constants.r')
-#setwd("/Users/jewelho/Desktop/Capstone/Code")
+# setwd("/Users/jewelho/Desktop/Capstone/Code/APS490RBCCM")
 # The "RWeka" package and the options gives more space to store the data
 # XLConnect package is for "readWorksheetFromFile" function
 options( java.parameters = "-Xmx6g" )
-install.packages("RWeka")
+#install.packages("RWeka")
 library( "RWeka" )
-install.packages("XLConnect")
+#install.packages("XLConnect")
 library(XLConnect)
 
 
@@ -20,14 +20,13 @@ library(XLConnect)
 
 #=================================================================
 # available stocks: AC,BNS,BMO,SPTSX
-env <- global_tables
-symbol <- "BNS"
+#env <- global_tables
 #symbol <- "SPTSX" 
 # the symbol is the same as the excel tab name
 #tick_name <-"SPTSX_tick"
 #bid_name <-"SPTSX_bid"
 #ask_name <-"SPTSX_ask"
-filename <- "../data/TSXdatafile.xlsx"
+filename <- "../data/TSXdatafile.xls"
 #=======================================================================
 
 
@@ -39,7 +38,6 @@ filename <- "../data/TSXdatafile.xlsx"
 #   data_cleaning(filename, env, symbol, tick_name, bid_name, ask_name,Name)
 #   #data_cleaning2(filename, env, symbol, tick_name, bid_name, ask_name,Name)
 # }
-import_data(env, symbol)
 
 import_data <-  function (env, symbol){
   suffix <- c(Con_Data_Tick_Suffix, Con_Data_Bid_Suffix, Con_Data_Ask_Suffix)
@@ -111,7 +109,6 @@ data_cleaning2 <- function(env, symbol, Name){
   env[[Name]] = env[[Name]][row_to_keep,]
 }
 
-
 # symbols 
 # return (Nstocks * rows) 
 # if no quote then return empty
@@ -129,7 +126,7 @@ getquotes<-function(env,symbol,time){
   
   #datable_table <- c(datatable_name_tick, datatable_name_bid, datatable_name_ask)
   #datable_list <- paste(symbol, datable_table, sep = "")
-
+  
   mkt_quote = data.frame(matrix(NA, length(symbol), length(mkt_quote_spec)))
   colnames(mkt_quote) <- mkt_quote_spec
   
@@ -142,25 +139,29 @@ getquotes<-function(env,symbol,time){
   mkt_quote[symbol, Con_Data_ColName_LastNumTicks] <- env[[datatable_name_tick]][[Con_Data_ColName_NumTicks]][[time-1]]
   mkt_quote[symbol, Con_Data_ColName_LastVolume] <- env[[datatable_name_tick]][[Con_Data_ColName_Volume]][[time-1]]
   mkt_quote[symbol, Con_Data_ColName_LastValue] <- env[[datatable_name_tick]][[Con_Data_ColName_Value]][[time-1]]
-
+  
   
   
   # this function returns an updated mkt_quote table
-  }
+}
 
 
-
- #tested
-update_orderbook <- function (bid, ask, env, orderbook_name, timestamp){
+ #untested
+update_pendingorderbook <- function (env, timestamp, symbol){
   #orderbook is a referene (pointer in an environment), and changes are meant to be permanent
   #taking in orderbook as argument and returns a list containing execution messages
   #for the purpose of this back testing order book will only contain pending limit orders
-  orderbook <- env[[orderbook_name]]
+  orderbook <- env[[Con_GlobalVarName_LOB]]
+  quotes <- getquotes(env, symbol, timestamp)
+  
+  
+  symbols_on_book <- orderbook[, Con_FieldName_Sym]
+  ask <- apply(symbol_on_books, 1, function (sym) {return (quotes[quotes[,Con_FieldName_Sym] = sym, Con_FieldName_LastLowestAsk])})
+  bid <- apply(symbol_on_books, 1, function (sym) {return (quotes[quotes[,Con_FieldName_Sym] = sym, Con_FieldName_LastHighestBid])})
   
   ready_indices <- (orderbook[,Con_FieldName_Price] >= ask & orderbook[,Con_FieldName_Side] == Con_Side_Buy) |(orderbook[,Con_FieldName_Price] <= bid & orderbook[,Con_FieldName_Side] == Con_Side_Sell)
   ready_orders <- orderbook[ready_indices,]
-  executed_price <- (orderbook[ready_indices, Con_FieldName_Side] == Con_Side_Buy) * ask + 
-    (orderbook[ready_indices, Con_FieldName_Side] == Con_Side_Sell) * bid
+  executed_price <- orderbook[ready_indices, Con_FieldName_Price]
 
   env[[orderbook_name]] <- orderbook[!ready_indices,]
   exec_msgs <- generate_fill_msgs(ready_orders, executed_price, timestamp)
@@ -255,25 +256,45 @@ update_trades_pnl_tables<- function (fill_msgs, env, timestamp){
   names(positionbook)[length(positionbook)] <- timestamp
   env[[Con_GlobalVarName_PositionBook]] <- positionbook
 }
-#tested new orders, cancel and replace not implemented
-handle_orders <- function (orders, env, orderbook_name, bid, ask, timestamp){
+#untested new orders, cancel and replace not implemented
+handle_orders <- function (orders, symbol, env, timestamp){
   #orderbook is a referene (pointer in an environment), and changes are meant to be permanent
   #handles all orders (new, replace, cancels) and update the order book approriately
   #returns execution messages
+  
+  quotes <- getquotes(env, symbol, timestamp)
+  
   new_orders <- orders[orders[,Con_FieldName_MsgType] == Con_MsgType_New,]
   replace_orders <- orders[orders[,Con_FieldName_MsgType] == Con_MsgType_Replace,]
   cancel_orders <- orders[orders[,Con_FieldName_MsgType] == Con_MsgType_Cancel,]
   
   mkt_new <- new_orders[new_orders[,Con_FieldName_OrdType] == Con_OrdType_Mkt, ]
-  exec_prices <- (mkt_new[, Con_FieldName_Side] == Con_Side_Buy ) * ask + 
-    (mkt_new[, Con_FieldName_Side] == Con_Side_Sell ) * bid
-  limit_new <- new_orders[new_orders[,Con_FieldName_OrdType] == Con_OrdType_Limit, ]
+  mkt_order_symbols <- mkt_new[, Con_FieldName_Sym]
+  mkt_ask <- apply(mkt_order_symbols, 1, function (sym) {return (quotes[quotes[,Con_FieldName_Sym] = sym, Con_FieldName_CurrentAsk])})
+  mkt_bid <- apply(mkt_order_symbols, 1, function (sym) {return (quotes[quotes[,Con_FieldName_Sym] = sym, Con_FieldName_CurrentBid])})
   
-  insert_into_orderbook(limit_new, env, orderbook_name)
+  mkt_exec_prices <- (mkt_new[, Con_FieldName_Side] == Con_Side_Buy ) * mkt_ask + 
+    (mkt_new[, Con_FieldName_Side] == Con_Side_Sell ) * mkt_bid
+  
+  
+  limit_new <- new_orders[new_orders[,Con_FieldName_OrdType] == Con_OrdType_Limit, ]
+  lmt_order_symbols <- limit_new[, Con_FieldName_Sym]
+  lmt_ask <- apply(lmt_order_symbols, 1, function (sym) {return (quotes[quotes[,Con_FieldName_Sym] = sym, Con_FieldName_CurrentAsk])})
+  lmt_bid <- apply(lmt_order_symbols, 1, function (sym) {return (quotes[quotes[,Con_FieldName_Sym] = sym, Con_FieldName_CurrentBid])})
+  
+  mkt_lmt_orders_indices <- (limit_new[,Con_FieldName_Price] >= lmt_ask & limit_new[,Con_FieldName_Side] == Con_Side_Buy) |(limit_new[,Con_FieldName_Price] <= lmt_bid & limit_new[,Con_FieldName_Side] == Con_Side_Sell)
+  mkt_lmt_orders <- limit_new[mkt_lmt_orders_indices,]
+  mkt_lmt_ask <- lmt_ask[mkt_lmt_orders_indices]
+  mkt_lmt_bid <- lmt_bid[mkt_lmt_orders_indices]
+  mkt_lmt_prices <- (mkt_lmt_orders[, Con_FieldName_Side] == Con_Side_Buy ) * mkt_lmt_ask + 
+    (mkt_lmt_orders[, Con_FieldName_Side] == Con_Side_Sell ) * mkt_lmt_bid
+  
+  
+  insert_into_orderbook(limit_new, env, Con_GlobalVarName_LOB)
   exec_replace <- handle_replaces(replace_orders, orderbook, timestamp)
   exec_cancel <- handle_cancels(cancel_orders, orderbook, timestamp)
   #fill must come after replace and cancel has been handled
-  exec_fill <- rbind(generate_fill_msgs(mkt_new, exec_prices, timestamp), update_orderbook(bid, ask, env, orderbook_name, timestamp))
+  exec_fill <- rbind(generate_fill_msgs(mkt_new, mkt_exec_prices, timestamp), generate_fill_msgs(mkt_lmt_orders, mkt_lmt_prices, timestamp))
   update_trades_pnl_tables(exec_fill, env, timestamp)
   return(rbind(exec_replace, exec_cancel, exec_fill))
 }
