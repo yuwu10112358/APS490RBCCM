@@ -34,6 +34,6 @@ for (n in 1:N){
 }
 
 
-system.time({estimate <- EM(p_increment, volume)})
+system.time({estimate <- EM(p_increment, volume, M)})
 
 

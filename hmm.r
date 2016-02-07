@@ -1,5 +1,5 @@
 
-num_states <- 4
+#num_states <- 4
 
 error_bound <- 0.001
 
@@ -7,7 +7,7 @@ state_log_lik <- function(p_increment, mu, sigma_mu, volume, eta, sigma_eta){
   return (-0.5 * (((p_increment - mu)/sigma_mu)^2 + ((volume - eta)/sigma_eta)^2) - log(2 * pi * sigma_mu * sigma_eta))
 }
 
-EM <- function (p_increment, volume){
+EM <- function (p_increment, volume, num_states){
   #format of p_increment: N X T matrix, N = number of days in training data,
   # T = number of steps in a day
   #format of volume: N X T matrix, same as above
@@ -44,23 +44,23 @@ EM <- function (p_increment, volume){
     old_sigma_eta <- sigma_eta
     old_A <- A
     
-    log_alpha = calc_forward(N, Tnum, A, p_increment, mu, sigma_mu, volume, eta, sigma_eta)
-    log_beta = calc_backward(N, Tnum, A, p_increment, mu, sigma_mu, volume, eta, sigma_eta)
-    P <- calc_P(N, Tnum, log_alpha, log_beta)
-    mu = update_mu(P, p_increment)
-    sigma_mu = update_sigma_mu(P, p_increment, mu, N, Tnum)
-    eta = update_eta(P, volume)
-    sigma_eta = update_sigma_eta(P, volume, eta, N, Tnum)
+    log_alpha = calc_forward(num_states, N, Tnum, A, p_increment, mu, sigma_mu, volume, eta, sigma_eta)
+    log_beta = calc_backward(num_states, N, Tnum, A, p_increment, mu, sigma_mu, volume, eta, sigma_eta)
+    P <- calc_P(num_states, N, Tnum, log_alpha, log_beta)
+    mu = update_mu(num_states, P, p_increment)
+    sigma_mu = update_sigma_mu(num_states, P, p_increment, mu, N, Tnum)
+    eta = update_eta(num_states, P, volume)
+    sigma_eta = update_sigma_eta(num_states, P, volume, eta, N, Tnum)
     if (i == 5){
       l1 <- 1
     }
-    A = update_A(N, Tnum, P, log_alpha, log_beta, A, p_increment, mu, sigma_mu, volume, eta, sigma_eta)
+    A = update_A(num_states, N, Tnum, P, log_alpha, log_beta, A, p_increment, mu, sigma_mu, volume, eta, sigma_eta)
     
-    diff_mu <- sum(abs(old_mu - mu))
-    diff_eta <- sum(abs(old_eta - eta))
-    diff_sigma_mu <- sum(abs(old_sigma_mu - sigma_mu))
-    diff_sigma_eta <- sum(abs(old_sigma_eta - sigma_eta))
-    diff_A <- sum(abs(old_A - A))
+    diff_mu <- sum(abs(old_mu - mu)) / sum(abs(old_mu))
+    diff_eta <- sum(abs(old_eta - eta)) / sum(abs(old_eta))
+    diff_sigma_mu <- sum(abs(old_sigma_mu - sigma_mu)) / sum(abs(old_sigma_mu))
+    diff_sigma_eta <- sum(abs(old_sigma_eta - sigma_eta)) / sum(abs(old_sigma_eta))
+    diff_A <- sum(abs(old_A - A)) / sum(abs(old_A))
     if (diff_mu < error_bound && diff_eta < error_bound && diff_sigma_mu < error_bound &&
         diff_sigma_eta < error_bound && diff_A < error_bound){
       break
@@ -78,7 +78,7 @@ EM <- function (p_increment, volume){
   return(params)
 }
 
-calc_forward <- function(N, Tnum, A, p_increment, mu, sigma_mu, volume, eta, sigma_eta){
+calc_forward <- function(num_states, N, Tnum, A, p_increment, mu, sigma_mu, volume, eta, sigma_eta){
   log_alpha <- array(0, c(num_states, Tnum, N))
   #get the initial prob
   log_alpha[, 1, ] <- state_log_lik(matrix(p_increment[,1], nrow = num_states, ncol = dim(p_increment)[1], byrow = TRUE),
@@ -98,7 +98,7 @@ calc_forward <- function(N, Tnum, A, p_increment, mu, sigma_mu, volume, eta, sig
   return (log_alpha)
 }
 
-calc_backward <- function(N, Tnum, A, p_increment, mu, sigma_mu, volume, eta, sigma_eta){
+calc_backward <- function(num_states, N, Tnum, A, p_increment, mu, sigma_mu, volume, eta, sigma_eta){
   log_beta <- array(0, c(num_states, Tnum, N))
   log_beta[, Tnum, ] <- 0
   for (t in (Tnum - 1) : 1){
@@ -115,7 +115,7 @@ calc_backward <- function(N, Tnum, A, p_increment, mu, sigma_mu, volume, eta, si
   return (log_beta[,1:Tnum,])
 }
 
-calc_P <- function(N, Tnum, log_alpha, log_beta){
+calc_P <- function(num_states, N, Tnum, log_alpha, log_beta){
   temp <- log_alpha + log_beta
   temp2 <- array(0, c(num_states, Tnum, N))
   P <- array(0, c(num_states, Tnum, N))
@@ -126,7 +126,7 @@ calc_P <- function(N, Tnum, log_alpha, log_beta){
   return (P)
 }
 
-update_A <- function(N, Tnum, P, log_alpha, log_beta, A, p_increment, mu, sigma_mu, volume, eta, sigma_eta){
+update_A <- function(num_states, N, Tnum, P, log_alpha, log_beta, A, p_increment, mu, sigma_mu, volume, eta, sigma_eta){
   conditional_tp <- array(0, c(N, (Tnum - 1), num_states, num_states))
   for (n in 1:N){
     if (n == 71){
@@ -150,7 +150,7 @@ update_A <- function(N, Tnum, P, log_alpha, log_beta, A, p_increment, mu, sigma_
   return (new_A)
 }
 
-update_mu <- function(P, p_increment){
+update_mu <- function(num_states, P, p_increment){
   new_mu <- rep(0, num_states)
   for (i in 1: num_states){
     new_mu[i] <- sum(P[i,,] * t(p_increment)) / sum(P[i,,])
@@ -158,7 +158,7 @@ update_mu <- function(P, p_increment){
   return(new_mu)
 }
 
-update_sigma_mu <- function(P, p_increment, mu, N, Tnum){
+update_sigma_mu <- function(num_states, P, p_increment, mu, N, Tnum){
   new_sigma_mu <- rep(0, num_states)
   for(i in 1: num_states){
     new_sigma_mu[i] <- sqrt(sum(t(p_increment - mu[i])^2 * P[i,,]) * N * Tnum / ((Tnum * N - 1) * sum(P[i,,])))
@@ -166,7 +166,7 @@ update_sigma_mu <- function(P, p_increment, mu, N, Tnum){
   return(new_sigma_mu)
 }
 
-update_eta <- function(P, volume){
+update_eta <- function(num_states, P, volume){
   new_eta <- rep(0, num_states)
   for (i in 1: num_states){
     new_eta[i] <- sum(P[i,,] * t(volume)) / sum(P[i,,])
@@ -174,7 +174,7 @@ update_eta <- function(P, volume){
   return(new_eta)
 }
 
-update_sigma_eta <- function(P, volume, eta, N, Tnum){
+update_sigma_eta <- function(num_states, P, volume, eta, N, Tnum){
   new_sigma_eta <- rep(0, num_states)
   for(i in 1: num_states){
     new_sigma_eta[i] <- sqrt(sum(t(volume - eta[i])^2 * P[i,,]) * N * Tnum / ((N * Tnum - 1) * sum(P[i,,])))

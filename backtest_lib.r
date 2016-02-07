@@ -99,19 +99,143 @@ data_cleaning2 <- function(filename, env, symbol, tick_name, bid_name, ask_name,
 }
 
 
+# symbols 
+# return (Nstocks * rows) 
+# if no quote then return empty
+# aftermarket hour, 930-4 then return empty
+
+getquotes<-function(env,symbol,time){
+  # getquotes (Nstocks * rows) 
+  # time <- "2015-05-13 09:41:01 EDT"
+  
+
+  datatable_name_tick <- paste(symbol, Con_Data_Tick_Suffix, sep = "")
+  datatable_name_bid <- paste(symbol, Con_Data_Bid_Suffix, sep = "")
+  datatable_name_ask <- paste(symbol, Con_Data_Ask_Suffix, sep = "")
+  
+  #datable_table <- c(datatable_name_tick, datatable_name_bid, datatable_name_ask)
+  #datable_list <- paste(symbol, datable_table, sep = "")
+  
+  mkt_quote = data.frame(matrix(NA, length(symbol), length(mkt_quote_spec)))
+  colnames(mkt_quote) <- mkt_quote_spec
+  
+  mkt_quote[symbol, Con_FieldName_Sym] <- symbol
+  mkt_quote[symbol, Con_FieldName_CurrentBid] <- env[[datatable_name_bid]][[Con_Data_ColName_Open]][[time]]
+  mkt_quote[symbol, Con_FieldName_CurrentAsk] <- env[[datatable_name_ask]][[Con_Data_ColName_Open]][[time]]
+  mkt_quote[symbol, Con_FieldName_CurrentTick] <- env[[datatable_name_tick]][[Con_Data_ColName_Open]][[time]]
+  mkt_quote[symbol, Con_FieldName_LastHighestBid] <- env[[datatable_name_bid]][[Con_Data_ColName_High]][[time-1]]
+  mkt_quote[symbol, Con_FieldName_LastLowestAsk] <- env[[datatable_name_ask]][[Con_Data_ColName_Low]][[time-1]]
+  mkt_quote[symbol, Con_Data_ColName_LastNumTicks] <- env[[datatable_name_tick]][[Con_Data_ColName_NumTicks]][[time-1]]
+  mkt_quote[symbol, Con_Data_ColName_LastVolume] <- env[[datatable_name_tick]][[Con_Data_ColName_Volume]][[time-1]]
+  mkt_quote[symbol, Con_Data_ColName_LastValue] <- env[[datatable_name_tick]][[Con_Data_ColName_Value]][[time-1]]
+  
+  
+  
+  # this function returns an updated mkt_quote table
+
+  mkt_quote = data.frame(matrix(NA, length(symbol), length(mkt_quote_spec)))
+  colnames(mkt_quote) <- mkt_quote_spec
+  
+  time_930 <- get_time_since_open(as.POSIXct("2000-01-01 09:30:00", tz = "EST"))
+  time_931 <- get_time_since_open(as.POSIXct("2000-01-01 09:31:00", tz = "EST"))
+  time_1559 <- get_time_since_open(as.POSIXct("2000-01-01 15:59:00", tz = "EST"))
+  time_1600 <- get_time_since_open(as.POSIXct("2000-01-01 16:00:00", tz = "EST"))
+  
+  
+  for (i in 1:length(symbol)){
+  
+  datatable_name_tick <- paste(symbol[i], Con_Data_Tick_Suffix, sep = "")
+  datatable_name_bid <- paste(symbol[i], Con_Data_Bid_Suffix, sep = "")
+  datatable_name_ask <- paste(symbol[i], Con_Data_Ask_Suffix, sep = "")
+  
+  datable_table <- c(datatable_name_tick, datatable_name_bid, datatable_name_ask)
+  
+  # datable_list <- paste(symbol, datable_table, sep = "")
+
+  #loop through each symbol, look for the position of this 9:30 of each day.
+  time <- "2000-01-01 09:30:00 EST"
+  date <- strftime(time, format="%Y-%m-%d")
+  timezone <- strftime(global_tables[["BNS_ask"]][12,1],format = "%Z")
+  starttime <-paste(date, "09:30:00", timezone)
+  
+  
+  for (j in 1:nrow(env[[datatable_name_tick]])){
+    if(env[[datatable_name_tick]][[Con_Data_ColName_Date]][j] == starttime)
+      break
+  }
+  for (j in 1:nrow(env[[datatable_name_bid]])){
+    if(env[[datatable_name_bid]][[Con_Data_ColName_Date]][j] == starttime)
+      break
+  }
+  for (j in 1:nrow(env[[datatable_name_ask]])){
+    if(env[[datatable_name_ask]][[Con_Data_ColName_Date]][j] == starttime)
+      break
+  }
+  
+  
+  if (time >= time_931 & time <= time_1559){
+    mkt_quote[i, Con_FieldName_Sym] <- symbol
+    mkt_quote[i, Con_FieldName_CurrentBid] <- env[[datatable_name_bid]][[Con_Data_ColName_Open]][[Con_Data_ColName_Date]]
+    mkt_quote[i, Con_FieldName_CurrentAsk] <- env[[datatable_name_ask]][[Con_Data_ColName_Open]][[Con_Data_ColName_Date]]
+    mkt_quote[i, Con_FieldName_CurrentTick] <- env[[datatable_name_tick]][[Con_Data_ColName_Open]][[Con_Data_ColName_Date]]
+    mkt_quote[i, Con_FieldName_LastHighestBid] <- env[[datatable_name_bid]][[Con_Data_ColName_High]][[Con_Data_ColName_Date]][j-1]
+    mkt_quote[i, Con_FieldName_LastLowestAsk] <- env[[datatable_name_ask]][[Con_Data_ColName_Low]][[Con_Data_ColName_Date]][j-1]
+    mkt_quote[i, Con_Data_ColName_LastNumTicks] <- env[[datatable_name_tick]][[Con_Data_ColName_NumTicks]][[Con_Data_ColName_Date]][j-1]
+    mkt_quote[i, Con_Data_ColName_LastVolume] <- env[[datatable_name_tick]][[Con_Data_ColName_Volume]][[Con_Data_ColName_Date]][j-1]
+    mkt_quote[i, Con_Data_ColName_LastValue] <- env[[datatable_name_tick]][[Con_Data_ColName_Value]][[Con_Data_ColName_Date]][j-1]
+  }
+  
+  else if (time == time_930){
+    # 9:30 then opening tick for 5 prices, val/vol/tick = 0
+    mkt_quote[i, Con_FieldName_Sym] <- symbol
+    mkt_quote[i, Con_FieldName_CurrentBid] <- env[[datatable_name_tick]][[Con_Data_ColName_Open]][[Con_Data_ColName_Date]][j]
+    mkt_quote[i, Con_FieldName_CurrentAsk] <- env[[datatable_name_tick]][[Con_Data_ColName_Open]][[Con_Data_ColName_Date]][j]
+    mkt_quote[i, Con_FieldName_CurrentTick] <- env[[datatable_name_tick]][[Con_Data_ColName_Open]][[Con_Data_ColName_Date]][j]
+    mkt_quote[i, Con_FieldName_LastHighestBid] <- env[[datatable_name_tick]][[Con_Data_ColName_Open]][[Con_Data_ColName_Date]][j]
+    mkt_quote[i, Con_FieldName_LastLowestAsk] <- env[[datatable_name_tick]][[Con_Data_ColName_Open]][[Con_Data_ColName_Date]][j]
+    mkt_quote[i, Con_Data_ColName_LastNumTicks] <- 0
+    mkt_quote[i, Con_Data_ColName_LastVolume] <- 0
+    mkt_quote[i, Con_Data_ColName_LastValue] <- 0
+    
+  }
+  else if (time == time_1600){
+    # 15:59 close tick,val/vol/tick 
+    mkt_quote[i, Con_FieldName_Sym] <- symbol
+    mkt_quote[i, Con_FieldName_CurrentBid] <- env[[datatable_name_tick]][[Con_Data_ColName_LastPrice]][[Con_Data_ColName_Date]][j-1]
+    mkt_quote[i, Con_FieldName_CurrentAsk] <- env[[datatable_name_tick]][[Con_Data_ColName_LastPrice]][[Con_Data_ColName_Date]][j-1]
+    mkt_quote[i, Con_FieldName_CurrentTick] <- env[[datatable_name_tick]][[Con_Data_ColName_LastPrice]][[Con_Data_ColName_Date]][j-1]
+    mkt_quote[i, Con_FieldName_LastHighestBid] <- env[[datatable_name_tick]][[Con_Data_ColName_Open]][[Con_Data_ColName_Date]][j-1]
+    mkt_quote[i, Con_FieldName_LastLowestAsk] <- env[[datatable_name_tick]][[Con_Data_ColName_Open]][[Con_Data_ColName_Date]][j-1]
+    mkt_quote[i, Con_Data_ColName_LastNumTicks] <- env[[datatable_name_tick]][[Con_Data_ColName_NumTicks]][[Con_Data_ColName_Date]][j-1]
+    mkt_quote[i, Con_Data_ColName_LastVolume] <- env[[datatable_name_tick]][[Con_Data_ColName_Volume]][[Con_Data_ColName_Date]][j-1]
+    mkt_quote[i, Con_Data_ColName_LastValue] <- env[[datatable_name_tick]][[Con_Data_ColName_Value]][[Con_Data_ColName_Date]][j-1]
+  }
+  else{
+  }
+  
+  }
+  # this function returns an updated mkt_quote table
+  return (mkt_quote)
+
+}
 
 
- #tested
-update_orderbook <- function (bid, ask, env, orderbook_name, timestamp){
+ #untested
+update_pendingorderbook <- function (env, timestamp, symbol){
   #orderbook is a referene (pointer in an environment), and changes are meant to be permanent
   #taking in orderbook as argument and returns a list containing execution messages
   #for the purpose of this back testing order book will only contain pending limit orders
-  orderbook <- env[[orderbook_name]]
+  orderbook <- env[[Con_GlobalVarName_LOB]]
+  quotes <- getquotes(env, symbol, timestamp)
+  
+  
+  symbols_on_book <- orderbook[, Con_FieldName_Sym]
+  ask <- apply(symbol_on_books, 1, function (sym) {return (quotes[quotes[,Con_FieldName_Sym] = sym, Con_FieldName_LastLowestAsk])})
+  bid <- apply(symbol_on_books, 1, function (sym) {return (quotes[quotes[,Con_FieldName_Sym] = sym, Con_FieldName_LastHighestBid])})
   
   ready_indices <- (orderbook[,Con_FieldName_Price] >= ask & orderbook[,Con_FieldName_Side] == Con_Side_Buy) |(orderbook[,Con_FieldName_Price] <= bid & orderbook[,Con_FieldName_Side] == Con_Side_Sell)
   ready_orders <- orderbook[ready_indices,]
-  executed_price <- (orderbook[ready_indices, Con_FieldName_Side] == Con_Side_Buy) * ask + 
-    (orderbook[ready_indices, Con_FieldName_Side] == Con_Side_Sell) * bid
+  executed_price <- orderbook[ready_indices, Con_FieldName_Price]
 
   env[[orderbook_name]] <- orderbook[!ready_indices,]
   exec_msgs <- generate_fill_msgs(ready_orders, executed_price, timestamp)
@@ -206,25 +330,45 @@ update_trades_pnl_tables<- function (fill_msgs, env, timestamp){
   names(positionbook)[length(positionbook)] <- timestamp
   env[[Con_GlobalVarName_PositionBook]] <- positionbook
 }
-#tested new orders, cancel and replace not implemented
-handle_orders <- function (orders, env, orderbook_name, bid, ask, timestamp){
+#untested new orders, cancel and replace not implemented
+handle_orders <- function (orders, symbol, env, timestamp){
   #orderbook is a referene (pointer in an environment), and changes are meant to be permanent
   #handles all orders (new, replace, cancels) and update the order book approriately
   #returns execution messages
+  
+  quotes <- getquotes(env, symbol, timestamp)
+  
   new_orders <- orders[orders[,Con_FieldName_MsgType] == Con_MsgType_New,]
   replace_orders <- orders[orders[,Con_FieldName_MsgType] == Con_MsgType_Replace,]
   cancel_orders <- orders[orders[,Con_FieldName_MsgType] == Con_MsgType_Cancel,]
   
   mkt_new <- new_orders[new_orders[,Con_FieldName_OrdType] == Con_OrdType_Mkt, ]
-  exec_prices <- (mkt_new[, Con_FieldName_Side] == Con_Side_Buy ) * ask + 
-    (mkt_new[, Con_FieldName_Side] == Con_Side_Sell ) * bid
-  limit_new <- new_orders[new_orders[,Con_FieldName_OrdType] == Con_OrdType_Limit, ]
+  mkt_order_symbols <- mkt_new[, Con_FieldName_Sym]
+  mkt_ask <- apply(mkt_order_symbols, 1, function (sym) {return (quotes[quotes[,Con_FieldName_Sym] = sym, Con_FieldName_CurrentAsk])})
+  mkt_bid <- apply(mkt_order_symbols, 1, function (sym) {return (quotes[quotes[,Con_FieldName_Sym] = sym, Con_FieldName_CurrentBid])})
   
-  insert_into_orderbook(limit_new, env, orderbook_name)
+  mkt_exec_prices <- (mkt_new[, Con_FieldName_Side] == Con_Side_Buy ) * mkt_ask + 
+    (mkt_new[, Con_FieldName_Side] == Con_Side_Sell ) * mkt_bid
+  
+  
+  limit_new <- new_orders[new_orders[,Con_FieldName_OrdType] == Con_OrdType_Limit, ]
+  lmt_order_symbols <- limit_new[, Con_FieldName_Sym]
+  lmt_ask <- apply(lmt_order_symbols, 1, function (sym) {return (quotes[quotes[,Con_FieldName_Sym] = sym, Con_FieldName_CurrentAsk])})
+  lmt_bid <- apply(lmt_order_symbols, 1, function (sym) {return (quotes[quotes[,Con_FieldName_Sym] = sym, Con_FieldName_CurrentBid])})
+  
+  mkt_lmt_orders_indices <- (limit_new[,Con_FieldName_Price] >= lmt_ask & limit_new[,Con_FieldName_Side] == Con_Side_Buy) |(limit_new[,Con_FieldName_Price] <= lmt_bid & limit_new[,Con_FieldName_Side] == Con_Side_Sell)
+  mkt_lmt_orders <- limit_new[mkt_lmt_orders_indices,]
+  mkt_lmt_ask <- lmt_ask[mkt_lmt_orders_indices]
+  mkt_lmt_bid <- lmt_bid[mkt_lmt_orders_indices]
+  mkt_lmt_prices <- (mkt_lmt_orders[, Con_FieldName_Side] == Con_Side_Buy ) * mkt_lmt_ask + 
+    (mkt_lmt_orders[, Con_FieldName_Side] == Con_Side_Sell ) * mkt_lmt_bid
+  
+  
+  insert_into_orderbook(limit_new, env, Con_GlobalVarName_LOB)
   exec_replace <- handle_replaces(replace_orders, orderbook, timestamp)
   exec_cancel <- handle_cancels(cancel_orders, orderbook, timestamp)
   #fill must come after replace and cancel has been handled
-  exec_fill <- rbind(generate_fill_msgs(mkt_new, exec_prices, timestamp), update_orderbook(bid, ask, env, orderbook_name, timestamp))
+  exec_fill <- rbind(generate_fill_msgs(mkt_new, mkt_exec_prices, timestamp), generate_fill_msgs(mkt_lmt_orders, mkt_lmt_prices, timestamp))
   update_trades_pnl_tables(exec_fill, env, timestamp)
   return(rbind(exec_replace, exec_cancel, exec_fill))
 }
