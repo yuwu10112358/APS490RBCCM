@@ -109,17 +109,17 @@ data_cleaning2 <- function(env, symbol, Name){
   env[[Name]] = env[[Name]][row_to_keep,]
 }
 
+
 # symbols 
 # return (Nstocks * rows) 
 # if no quote then return empty
-# aftermarket hour, 930/4 then return empty
-# 9:31 - 3:59
-# 9:30 then opening tick for 5 prices, val/vol/tick = 0
-# 4:00 close tick, 
-
+# aftermarket hour, 930-4 then return empty
 
 getquotes<-function(env,symbol,time){
+  # getquotes (Nstocks * rows) 
+  # time <- "2015-05-13 09:41:01 EDT"
   
+
   datatable_name_tick <- paste(symbol, Con_Data_Tick_Suffix, sep = "")
   datatable_name_bid <- paste(symbol, Con_Data_Bid_Suffix, sep = "")
   datatable_name_ask <- paste(symbol, Con_Data_Ask_Suffix, sep = "")
@@ -143,6 +143,91 @@ getquotes<-function(env,symbol,time){
   
   
   # this function returns an updated mkt_quote table
+
+  mkt_quote = data.frame(matrix(NA, length(symbol), length(mkt_quote_spec)))
+  colnames(mkt_quote) <- mkt_quote_spec
+  
+  time_930 <- get_time_since_open(as.POSIXct("2000-01-01 09:30:00", tz = "EST"))
+  time_931 <- get_time_since_open(as.POSIXct("2000-01-01 09:31:00", tz = "EST"))
+  time_1559 <- get_time_since_open(as.POSIXct("2000-01-01 15:59:00", tz = "EST"))
+  time_1600 <- get_time_since_open(as.POSIXct("2000-01-01 16:00:00", tz = "EST"))
+  
+  
+  for (i in 1:length(symbol)){
+  
+  datatable_name_tick <- paste(symbol[i], Con_Data_Tick_Suffix, sep = "")
+  datatable_name_bid <- paste(symbol[i], Con_Data_Bid_Suffix, sep = "")
+  datatable_name_ask <- paste(symbol[i], Con_Data_Ask_Suffix, sep = "")
+  
+  datable_table <- c(datatable_name_tick, datatable_name_bid, datatable_name_ask)
+  
+  # datable_list <- paste(symbol, datable_table, sep = "")
+
+  #loop through each symbol, look for the position of this 9:30 of each day.
+  time <- "2000-01-01 09:30:00 EST"
+  date <- strftime(time, format="%Y-%m-%d")
+  timezone <- strftime(global_tables[["BNS_ask"]][12,1],format = "%Z")
+  starttime <-paste(date, "09:30:00", timezone)
+  
+  
+  for (j in 1:nrow(env[[datatable_name_tick]])){
+    if(env[[datatable_name_tick]][[Con_Data_ColName_Date]][j] == starttime)
+      break
+  }
+  for (j in 1:nrow(env[[datatable_name_bid]])){
+    if(env[[datatable_name_bid]][[Con_Data_ColName_Date]][j] == starttime)
+      break
+  }
+  for (j in 1:nrow(env[[datatable_name_ask]])){
+    if(env[[datatable_name_ask]][[Con_Data_ColName_Date]][j] == starttime)
+      break
+  }
+  
+  
+  if (time >= time_931 & time <= time_1559){
+    mkt_quote[i, Con_FieldName_Sym] <- symbol
+    mkt_quote[i, Con_FieldName_CurrentBid] <- env[[datatable_name_bid]][[Con_Data_ColName_Open]][[Con_Data_ColName_Date]]
+    mkt_quote[i, Con_FieldName_CurrentAsk] <- env[[datatable_name_ask]][[Con_Data_ColName_Open]][[Con_Data_ColName_Date]]
+    mkt_quote[i, Con_FieldName_CurrentTick] <- env[[datatable_name_tick]][[Con_Data_ColName_Open]][[Con_Data_ColName_Date]]
+    mkt_quote[i, Con_FieldName_LastHighestBid] <- env[[datatable_name_bid]][[Con_Data_ColName_High]][[Con_Data_ColName_Date]][j-1]
+    mkt_quote[i, Con_FieldName_LastLowestAsk] <- env[[datatable_name_ask]][[Con_Data_ColName_Low]][[Con_Data_ColName_Date]][j-1]
+    mkt_quote[i, Con_Data_ColName_LastNumTicks] <- env[[datatable_name_tick]][[Con_Data_ColName_NumTicks]][[Con_Data_ColName_Date]][j-1]
+    mkt_quote[i, Con_Data_ColName_LastVolume] <- env[[datatable_name_tick]][[Con_Data_ColName_Volume]][[Con_Data_ColName_Date]][j-1]
+    mkt_quote[i, Con_Data_ColName_LastValue] <- env[[datatable_name_tick]][[Con_Data_ColName_Value]][[Con_Data_ColName_Date]][j-1]
+  }
+  
+  else if (time == time_930){
+    # 9:30 then opening tick for 5 prices, val/vol/tick = 0
+    mkt_quote[i, Con_FieldName_Sym] <- symbol
+    mkt_quote[i, Con_FieldName_CurrentBid] <- env[[datatable_name_tick]][[Con_Data_ColName_Open]][[Con_Data_ColName_Date]][j]
+    mkt_quote[i, Con_FieldName_CurrentAsk] <- env[[datatable_name_tick]][[Con_Data_ColName_Open]][[Con_Data_ColName_Date]][j]
+    mkt_quote[i, Con_FieldName_CurrentTick] <- env[[datatable_name_tick]][[Con_Data_ColName_Open]][[Con_Data_ColName_Date]][j]
+    mkt_quote[i, Con_FieldName_LastHighestBid] <- env[[datatable_name_tick]][[Con_Data_ColName_Open]][[Con_Data_ColName_Date]][j]
+    mkt_quote[i, Con_FieldName_LastLowestAsk] <- env[[datatable_name_tick]][[Con_Data_ColName_Open]][[Con_Data_ColName_Date]][j]
+    mkt_quote[i, Con_Data_ColName_LastNumTicks] <- 0
+    mkt_quote[i, Con_Data_ColName_LastVolume] <- 0
+    mkt_quote[i, Con_Data_ColName_LastValue] <- 0
+    
+  }
+  else if (time == time_1600){
+    # 15:59 close tick,val/vol/tick 
+    mkt_quote[i, Con_FieldName_Sym] <- symbol
+    mkt_quote[i, Con_FieldName_CurrentBid] <- env[[datatable_name_tick]][[Con_Data_ColName_LastPrice]][[Con_Data_ColName_Date]][j-1]
+    mkt_quote[i, Con_FieldName_CurrentAsk] <- env[[datatable_name_tick]][[Con_Data_ColName_LastPrice]][[Con_Data_ColName_Date]][j-1]
+    mkt_quote[i, Con_FieldName_CurrentTick] <- env[[datatable_name_tick]][[Con_Data_ColName_LastPrice]][[Con_Data_ColName_Date]][j-1]
+    mkt_quote[i, Con_FieldName_LastHighestBid] <- env[[datatable_name_tick]][[Con_Data_ColName_Open]][[Con_Data_ColName_Date]][j-1]
+    mkt_quote[i, Con_FieldName_LastLowestAsk] <- env[[datatable_name_tick]][[Con_Data_ColName_Open]][[Con_Data_ColName_Date]][j-1]
+    mkt_quote[i, Con_Data_ColName_LastNumTicks] <- env[[datatable_name_tick]][[Con_Data_ColName_NumTicks]][[Con_Data_ColName_Date]][j-1]
+    mkt_quote[i, Con_Data_ColName_LastVolume] <- env[[datatable_name_tick]][[Con_Data_ColName_Volume]][[Con_Data_ColName_Date]][j-1]
+    mkt_quote[i, Con_Data_ColName_LastValue] <- env[[datatable_name_tick]][[Con_Data_ColName_Value]][[Con_Data_ColName_Date]][j-1]
+  }
+  else{
+  }
+  
+  }
+  # this function returns an updated mkt_quote table
+  return (mkt_quote)
+
 }
 
 

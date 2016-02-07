@@ -269,9 +269,11 @@ passive_processing <- function(response){
   
 }
 
+global_tables[["BNS_ask"]][12,1]
+
 get_time_since_open <- function(timestamp){
   if (strftime(timestamp, format = "%Z") == "EDT")
-    return ((as.numeric(timestamp[i]) %% 86400) - 48600)
+    return ((as.numeric(timestamp) %% 86400) - 48600)
   else
-    return ((as.numeric(timestamp[i]) %% 86400) - 52200)
+    return ((as.numeric(timestamp) %% 86400) - 52200)
 }
