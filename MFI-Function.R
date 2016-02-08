@@ -34,27 +34,41 @@ negative_flow[1] = 0
 
 for(i in 2:N){
   
-  if(typical_price[i] == typical_price[i-1]){
+  if(abs(typical_price[i] - typical_price[i-1]) < 0.00001){
     
     positive_flow[i] = 0
     negative_flow[i] = 0
   }
   
-  
-else{
-  
-  if(typical_price[i] > typical_price[i-1]){
+  else if(typical_price[i] > typical_price[i-1]){
     
     positive_flow[i] = raw_money_flow[i]
     negative_flow[i] = 0
     
   }
   
-  else{  
+  else{
+    
     positive_flow[i] = 0
     negative_flow[i] = raw_money_flow[i]
-    }
-}
+    
+  }
+  
+  
+# else{
+#   
+#   if(typical_price[i] > typical_price[i-1]){
+#     
+#     positive_flow[i] = raw_money_flow[i]
+#     negative_flow[i] = 0
+#     
+#   }
+#   
+#   else{  
+#     positive_flow[i] = 0
+#     negative_flow[i] = raw_money_flow[i]
+#     }
+# }
   
 }
 
@@ -80,5 +94,5 @@ money_flow_index = 100 - 100/(1 + money_flow_ratio)
 }
 
 
-
+value<-MFI(current_time, market_high, market_low, market_close, market_volume, duration)
 
