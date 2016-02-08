@@ -21,14 +21,13 @@ strategy_ipr <- function(env){
   EquityList <- c("tick", "ask", "bid")
   a <- 1
   # only trading every 30 minutes, change this value when trading time is different 
-  end_a <- nrow(env[["list_dates"]])*12*30*length(Stocks)
-  end_a <- 1080
+  end_a <- nrow(env[["list_dates"]])*12*30
+  end_a <- 1920
   
   # loop through each minute (a) but only calculate IPR every 30 minutes  
   
   
   while (a < end_a){
-    print(a)
     for (stock in Stocks){
       stock_data <- paste(stock,EquityList[1],sep="_")
       tick_data <- env[[stock_data]]
@@ -123,9 +122,7 @@ strategy_ipr <- function(env){
         }
       }
     }
-    print(orderline)
     response <- handle_orders(orderline, Stocks, global_tables, as.character(next_date+60))
-    print(response)
     a <- a + 30
   }
 }
