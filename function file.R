@@ -1,7 +1,5 @@
 # constants
 jump <- 13
-buy_IPR <- 0.6
-sell_IPR <- 0.2
 
 return_and_stdev <- function(prices){
   for (i in 2:NROW(prices)){
