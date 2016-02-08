@@ -1,7 +1,7 @@
 rm(list = ls())
 source('constants.r')
-source('strategy_lib.r')
 source('backtest_lib.r')
+source('data_cleaning.r')
 library(XLConnect)
 #library(knitr)
 
@@ -51,39 +51,15 @@ names(global_tables[[Con_GlobalVarName_PositionBook]])[1] = 0
 global_tables[[Con_GlobalVarName_TradesBook]] <- data.frame(matrix(0, 0, length(tradesbook_spec)))
 colnames(global_tables[[Con_GlobalVarName_TradesBook]]) <- tradesbook_spec
 
-<<<<<<< HEAD
 global_tables[[Con_GlobalVarName_MktPrice]] <- list(vector())
 global_tables[[Con_GlobalVarName_BidPrice]] <- list(vector())
 global_tables[[Con_GlobalVarName_AskPrice]] <- list(vector())
 
-data_extraction("AAPL.xls", global_tables, "AAPL", Con_GlobalVarName_MktPrice, Con_GlobalVarName_BidPrice, Con_GlobalVarName_AskPrice)
-# data_extraction("/Users/Mary/Documents/test/TSXdatafile.xls", global_tables, "BMO", Con_GlobalVarName_MktPrice, Con_GlobalVarName_BidPrice, Con_GlobalVarName_AskPrice)
-strategy_naive(global_tables[[Con_GlobalVarName_MktPrice]][["Date"]][1],
-               global_tables[[Con_GlobalVarName_MktPrice]][["Date"]][length(global_tables[[Con_GlobalVarName_MktPrice]][["Date"]])], 
-               "AAPL", global_tables, bid= Con_GlobalVarName_BidPrice, 
-               ask = Con_GlobalVarName_AskPrice, 
-               mktprice = Con_GlobalVarName_MktPrice,
-               positionbook = Con_GlobalVarName_PositionBook,
-               pendingbook = Con_GlobalVarName_LOB)
+import_data(global_tables)
 
-output <- output(global_tables$tradesbook, global_tables$positionbook, global_tables$ask_price, 
-                  global_tables$bid_price, globa_tables$market_data)
-=======
-import_data(global_tables, "BNS")
+# output <- output(global_tables$tradesbook, global_tables$positionbook, global_tables$ask_price, 
+#                   global_tables$bid_price, globa_tables$market_data)
 
-# data_extraction(datafile_name, global_tables, "AAPL", Con_GlobalVarName_MktPrice, Con_GlobalVarName_BidPrice, Con_GlobalVarName_AskPrice)
-# strategy_naive(global_tables[[Con_GlobalVarName_MktPrice]][["Date"]][1],
-#                global_tables[[Con_GlobalVarName_MktPrice]][["Date"]][length(global_tables[[Con_GlobalVarName_MktPrice]][["Date"]])], 
-#                "AAPL", global_tables, bid= Con_GlobalVarName_BidPrice, 
-#                ask = Con_GlobalVarName_AskPrice, 
-#                mktprice = Con_GlobalVarName_MktPrice,
-#                positionbook = Con_GlobalVarName_PositionBook,
-#                pendingbook = Con_GlobalVarName_LOB)
-
-
-#output <- output(global_tables$tradesbook, global_tables$positionbook, global_tables$ask_price, 
-#                  global_tables$bid_price, globa_tables$market_data)
->>>>>>> origin/master
 
 
 

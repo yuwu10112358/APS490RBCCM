@@ -1,10 +1,10 @@
 source('hmm.r')
 source('constants.r')
-
+source('backtest_lib.r')
 test_HMMM <- function (env, symbol, time_interval, num_states){
-    env <- global_tables
-    symbol = "BNS"
-    time_interval = 5
+#     env <- global_tables
+#     symbol = "BNS"
+#     time_interval = 5
   datatable_name <- paste(symbol, Con_Data_Tick_Suffix, sep = "")
   timestamp <- env[[datatable_name]][[Con_Data_ColName_Date]]
   value <- env[[datatable_name]][[Con_Data_ColName_Value]]
@@ -175,7 +175,7 @@ performance_test <- function(start_time, end_time, env, symbol, time_interval, n
       current_time <- current_time + 60
       next
     }
-    response <- update_orderbook(env, current_time, symbol)
+    response <- update_pendingorderbook(env, current_time, symbol)
     if (nrow(response)!=0){
       passive_processing(response)
     }
@@ -267,13 +267,4 @@ performance_test <- function(start_time, end_time, env, symbol, time_interval, n
 
 passive_processing <- function(response){
   
-}
-
-global_tables[["BNS_ask"]][12,1]
-
-get_time_since_open <- function(timestamp){
-  if (strftime(timestamp, format = "%Z") == "EDT")
-    return ((as.numeric(timestamp) %% 86400) - 48600)
-  else
-    return ((as.numeric(timestamp) %% 86400) - 52200)
 }
