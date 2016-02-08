@@ -54,6 +54,7 @@ colnames(global_tables[[Con_GlobalVarName_TradesBook]]) <- tradesbook_spec
 global_tables[[Con_GlobalVarName_MktPrice]] <- list(vector())
 global_tables[[Con_GlobalVarName_BidPrice]] <- list(vector())
 global_tables[[Con_GlobalVarName_AskPrice]] <- list(vector())
+global_tables[[Con_GlobalVarName_ListDates]] <- list(vector())
 
 import_data(global_tables)
 

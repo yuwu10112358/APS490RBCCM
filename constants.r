@@ -53,6 +53,7 @@ Con_GlobalVarName_TradesBook <- "tradesbook"
 Con_GlobalVarName_MktPrice <- "market_price"
 Con_GlobalVarName_BidPrice <- "bid_price"
 Con_GlobalVarName_AskPrice <- "ask_price"
+Con_GlobalVarName_ListDates <- "list_dates"
 
 
 Con_Data_Tick_Suffix <- "_tick"
