@@ -21,6 +21,8 @@ Con_FieldName_MktVal = "MarketValue"
 Con_FieldName_OpenClose = "Open/Close"
 Con_FieldName_Pnl = "PnL"
 
+
+
 Con_FieldName_CurrentBid = "CurrentBid"
 Con_FieldName_CurrentAsk = "CurrentAsk"
 Con_FieldName_CurrentTick = "CurrentTick"
@@ -106,6 +108,7 @@ tradesbook_spec <- c(Con_FieldName_Time,
                      Con_FieldName_OpenClose,
                      Con_FieldName_Pnl)
 
+
 mkt_quote_spec <- c(Con_FieldName_Sym,
                     Con_FieldName_CurrentBid,
                     Con_FieldName_CurrentAsk,
@@ -115,3 +118,4 @@ mkt_quote_spec <- c(Con_FieldName_Sym,
                     Con_Data_ColName_LastNumTicks,
                     Con_Data_ColName_LastVolume,
                     Con_Data_ColName_LastValue)
+
