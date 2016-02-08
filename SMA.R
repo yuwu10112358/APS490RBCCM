@@ -1,11 +1,9 @@
 
 # Simple Moving Average
-#library? Error: could not find function
 
-current_time  <- 10
-market_close  <- (global_tables$market_price)["LAST_PRICE"]
+current_time  <- 25
+market_close  <- head(AC_tick$LAST_PRICE,100)
 duration      <- 10
-value         <- SMA(current_time, duration,market_close)
 
 
 SMA<- function(current_time, duration,market_close){
@@ -19,7 +17,7 @@ SMA<- function(current_time, duration,market_close){
   
   else{
   
-  close <- market_close[seq(current_time-duration + 1, current_time,1),"LAST_PRICE"]
+  close <- market_close[seq(current_time-duration + 1, current_time,1)]
   simple_moving_average = mean(close,trim = 0, na.rm = TRUE)
   
   return(simple_moving_average)                  

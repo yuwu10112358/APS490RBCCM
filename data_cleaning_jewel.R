@@ -1,11 +1,11 @@
 source('constants.r')
-setwd("/Users/jewelho/Desktop/Capstone/Code/APS490RBCCM")
+#setwd("/Users/jewelho/Desktop/Capstone/Code/APS490RBCCM")
 # The "RWeka" package and the options gives more space to store the data
 # XLConnect package is for "readWorksheetFromFile" function
 options( java.parameters = "-Xmx6g" )
-install.packages("RWeka")
+#install.packages("RWeka")
 library( "RWeka" )
-install.packages("XLConnect")
+#install.packages("XLConnect")
 library(XLConnect)
 
 
