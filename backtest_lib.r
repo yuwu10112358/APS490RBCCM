@@ -98,9 +98,9 @@ data_cleaning2 <- function(filename, env, symbol, tick_name, bid_name, ask_name,
 
 
 
-#env <- global_tables
-#symbol <- "BNS"
-#time <- "2015-05-14 09:41:01 EDT"
+env <- global_tables
+symbol <- "BNS"
+time <- "2015-05-14 09:41:01 EDT"
 
 getquotes(env,symbol,time)
 getquotes<-function(env,symbol,time){
