@@ -83,8 +83,8 @@ test_HMMM <- function (env, symbol, time_interval, num_states){
   sigma_eta <- t(data.matrix((estimates[["sigma_eta"]])))
   
   start_time <- timestamp[1]
-  start_time <- as.POSIXct('2015-05-25 9:30:00 EDT')
-  end_time <- timestamp[length(timestamp) - 1]
+  start_time <- as.POSIXct('2015-05-13 9:30:00 EDT')
+  end_time <- as.POSIXct('2015-05-15 15:59:00 EDT')
   
   cat('run performance testing \n')
   system.time({predictions <- performance_test(start_time, end_time, env, symbol, time_interval, num_states, A, mu, sigma_mu, eta, sigma_eta)})
@@ -104,6 +104,7 @@ test_HMMM <- function (env, symbol, time_interval, num_states){
   }
   
   comparison <- predictions[,2:Tnum] == actual_directions[1:nrow(predictions),2:Tnum]
+  sum(comparison[!is.na(comparison)]) / (nrow(comparison) * ncol(comparison))
 }
 
 get_params_estimates <- function (p_increments_training, volume_training, num_states)
@@ -154,6 +155,10 @@ performance_test <- function(start_time, end_time, env, symbol, time_interval, n
   #is missing, but at 9:32 it is available, then the quote at 9:32 is taken to be the same
   # as the quote of 9:32)
   
+  #strategy: each minute trying to predict the price movement for next minute. If predicts going
+  #up then buy mkt order now and sell mkt order 1 interval later
+  #if predicts going down then sell order now and buy 1 interval later
+  
   current_time <- start_time
   if (sum(is.na(getquotes(env, symbol, start_time))) != 0){
     cat('Error: data not available at start time /n')
@@ -173,6 +178,10 @@ performance_test <- function(start_time, end_time, env, symbol, time_interval, n
   predicted_price_direction <- NA
   prediction_list <- matrix(NA, 0, Tnum)
   p_increment_list <- matrix(NA, 0, Tnum)
+  
+  current_shares_to_trade <- 0
+  future_shares_to_trade <- 0
+  lot_size <- 100
   while (current_time <= end_time){
     
     quotes <- getquotes(env, symbol, current_time)
@@ -189,6 +198,8 @@ performance_test <- function(start_time, end_time, env, symbol, time_interval, n
     cumul_value <- cumul_value + quotes[,Con_Data_ColName_LastValue]
     cumul_volume <- cumul_volume + quotes[,Con_Data_ColName_LastVolume]
     if (time_since_open %% (time_interval* 60) == 0){
+      current_shares_to_trade <- future_shares_to_trade
+      future_shares_to_trade <- 0
       #Active processing
       if (time_since_open == 0){
         VWAP_prices <- quotes[,Con_FieldName_CurrentTick]
@@ -229,12 +240,33 @@ performance_test <- function(start_time, end_time, env, symbol, time_interval, n
         }
         if (expected_mu > 0){
           predicted_price_direction <- append(predicted_price_direction, TRUE)
+          current_shares_to_trade <- current_shares_to_trade + lot_size
+          future_shares_to_trade <- future_shares_to_trade - lot_size
         }
         else if (expected_mu < 0){
           predicted_price_direction <- append(predicted_price_direction, FALSE)
+          current_shares_to_trade <- current_shares_to_trade -lot_size
+          future_shares_to_trade <- future_shares_to_trade + lot_size
         }
         else{
           predicted_price_direction <- append(predicted_price_direction, NA)
+        }
+      }
+      
+      if (current_shares_to_trade != 0){
+        side <- (current_shares_to_trade > 0) * Con_Side_Buy + (current_shares_to_trade < 0) * Con_Side_Sell
+        orders = data.frame(matrix(NA, 1, length(order_msg_spec)))
+        colnames(orders) <- order_msg_spec
+        orders[,Con_FieldName_MsgType] = Con_MsgType_New
+        orders[,Con_FieldName_OrdID] = orderID
+        orderID = orderID + 1
+        orders[,Con_FieldName_Sym] = symbol
+        orders[,Con_FieldName_Qty] = abs(current_shares_to_trade)
+        orders[,Con_FieldName_Side] = side
+        orders[,Con_FieldName_OrdType] = Con_OrdType_Mkt
+        response <- handle_orders(orders, symbol, env, current_time)
+        if (nrow(response)!=0){
+          passive_processing(response)
         }
       }
       cumul_volume <- 0
@@ -243,6 +275,7 @@ performance_test <- function(start_time, end_time, env, symbol, time_interval, n
     }
     
     if (time_since_open == 23340){
+      #liquidate current position at 15:59
       positionbook <- env[[Con_GlobalVarName_PositionBook]]
       last_pos <- positionbook[[length(positionbook)]]
       if (nrow(last_pos) > 1){
@@ -270,6 +303,8 @@ performance_test <- function(start_time, end_time, env, symbol, time_interval, n
           passive_processing(response)
         }
       }
+      current_shares_to_trade <- 0
+      future_shares_to_trade <- 0
     }
     
     current_time <- current_time + 60
