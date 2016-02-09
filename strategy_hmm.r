@@ -83,7 +83,7 @@ test_HMMM <- function (env, symbol, time_interval, num_states){
   sigma_eta <- t(data.matrix((estimates[["sigma_eta"]])))
   
   start_time <- timestamp[1]
-  start_time <- as.POSIXct('2015-05-25 9:30:00 EDT')
+  start_time <- as.POSIXct('2015-10-25 9:30:00 EDT')
   end_time <- timestamp[length(timestamp) - 1]
   
   cat('run performance testing \n')
