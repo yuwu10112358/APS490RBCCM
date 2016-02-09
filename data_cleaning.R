@@ -54,7 +54,8 @@ import_data <- function(env){
       nm <- paste(stock,name,sep="_")
       col_nms <- colnames(env[[nm]])
       list_times_vec <- data.frame()
-      list_dates <- as.data.frame(unique(as.Date(env[[nm]][, "Date"])))
+      env[["list_dates"]] <- as.data.frame(unique(as.Date(env[[nm]][, "Date"])))
+      list_dates <- env[["list_dates"]]
       for (i in 1:nrow(list_dates)){
         st <- as.POSIXct(paste(list_dates[i,1], "09:30:00"), origin = "1970-01-01")
         en <- as.POSIXct(paste(list_dates[i,1], "16:00:00"), origin = "1970-01-01")

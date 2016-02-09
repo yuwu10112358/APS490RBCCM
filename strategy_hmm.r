@@ -88,7 +88,22 @@ test_HMMM <- function (env, symbol, time_interval, num_states){
   
   cat('run performance testing \n')
   system.time({predictions <- performance_test(start_time, end_time, env, symbol, time_interval, num_states, A, mu, sigma_mu, eta, sigma_eta)})
+  actual_directions <- matrix(NA, N, Tnum)
+  for (i in 1:N){
+    for (t in 1:Tnum){
+      if (p_increments[i,t] > 0){
+        actual_directions[i,t] = TRUE
+      }
+      else if(p_increments[i,t] < 0){
+        actual_directions[i,t] = FALSE
+      }
+      else{
+        
+      }
+    }
+  }
   
+  comparison <- predictions[,2:Tnum] == actual_directions[1:nrow(predictions),2:Tnum]
 }
 
 get_params_estimates <- function (p_increments_training, volume_training, num_states)

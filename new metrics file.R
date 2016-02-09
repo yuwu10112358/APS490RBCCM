@@ -1,10 +1,11 @@
 # output <- function(tradesbook, positionbook, ask_prices, bid_prices, market_data){
-
+EquityList <- c("tick", "ask", "bid")
+env < - global_tables
 ### TESTED
 tradesbook <- global_tables$tradesbook
 # manually add a row into the tradebook since the naive strategy doesn't empty inventory at end of session
-new_row <- c(1444071660, "AAPL", 1, 1, 110.92, "Close", .15)
-tradesbook <- rbind(tradesbook, new_row)
+
+
 positionbook <- global_tables$positionbook
 ### TESTED
 
@@ -52,10 +53,12 @@ for (i in 1:length(stock_list)){
       if (curr_side == 1 && curr_pos == "Open"){
         # add part in future if trading more than one stock, must access the correct market data
         # depending on what the value of stock_name is 
-        stock_matrix <- ask_prices
+        stock_data <- paste(stock_name,EquityList[2],sep="_")
+        stock_matrix <- env[[stock_data]]
         type <- "bid"
       } else if (curr_side == 2 && curr_pos == "Open"){
-        stock_matrix <- bid_prices
+        stock_data <- paste(stock_name,EquityList[3],sep="_")
+        stock_matrix <- env[[stock_data]]
         type <- "ask"
       } else if (curr_pos == "Close") {
         next

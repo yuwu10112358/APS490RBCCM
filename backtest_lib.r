@@ -1,11 +1,6 @@
 source('constants.r')
-# setwd("/Users/jewelho/Desktop/Capstone/Code/APS490RBCCM")
-# The "RWeka" package and the options gives more space to store the data
-# XLConnect package is for "readWorksheetFromFile" function
-options( java.parameters = "-Xmx6g" )
-#install.packages("RWeka")
-#library( "RWeka" )
-#install.packages("XLConnect")
+source('data_cleaning_jewel.r')
+library( "RWeka" )
 library(XLConnect)
 
 
@@ -191,6 +186,11 @@ update_pendingorderbook <- function (env, timestamp, symbol){
   #orderbook is a referene (pointer in an environment), and changes are meant to be permanent
   #taking in orderbook as argument and returns a list containing execution messages
   #for the purpose of this back testing order book will only contain pending limit orders
+ 
+  #env <-global_tables
+  #symbol <- "BNS"
+  #timestamp <- "2015-05-13 09:41:00 EDT"
+  
   orderbook <- env[[Con_GlobalVarName_LOB]]
   quotes <- getquotes(env, symbol, timestamp)
   
