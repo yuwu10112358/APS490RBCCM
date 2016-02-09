@@ -124,43 +124,58 @@ getquotes<-function(env,symbol,time){
     if (time_since_open == time_930){
       # 9:30 then opening tick for 5 prices, val/vol/tick = 0
       j <- (1:nrow(env[[datatable_name_tick]]))[env[[datatable_name_tick]][[Con_Data_ColName_Date]] == time]
-      mkt_quote[i, Con_FieldName_Sym] <- symbol[i]
-      mkt_quote[i, Con_FieldName_CurrentBid] <- env[[datatable_name_tick]][[Con_Data_ColName_Open]][j]
-      mkt_quote[i, Con_FieldName_CurrentAsk] <- env[[datatable_name_tick]][[Con_Data_ColName_Open]][j]
-      mkt_quote[i, Con_FieldName_CurrentTick] <- env[[datatable_name_tick]][[Con_Data_ColName_Open]][j]
-      mkt_quote[i, Con_FieldName_LastHighestBid] <- env[[datatable_name_tick]][[Con_Data_ColName_Open]][j]
-      mkt_quote[i, Con_FieldName_LastLowestAsk] <- env[[datatable_name_tick]][[Con_Data_ColName_Open]][j]
-      mkt_quote[i, Con_Data_ColName_LastNumTicks] <- 0
-      mkt_quote[i, Con_Data_ColName_LastVolume] <- 0
-      mkt_quote[i, Con_Data_ColName_LastValue] <- 0
+      if (length(j) == 0){
+        return (mkt_quote)
+      }
+      else{
+        mkt_quote[i, Con_FieldName_Sym] <- symbol[i]
+        mkt_quote[i, Con_FieldName_CurrentBid] <- env[[datatable_name_tick]][[Con_Data_ColName_Open]][j]
+        mkt_quote[i, Con_FieldName_CurrentAsk] <- env[[datatable_name_tick]][[Con_Data_ColName_Open]][j]
+        mkt_quote[i, Con_FieldName_CurrentTick] <- env[[datatable_name_tick]][[Con_Data_ColName_Open]][j]
+        mkt_quote[i, Con_FieldName_LastHighestBid] <- env[[datatable_name_tick]][[Con_Data_ColName_Open]][j]
+        mkt_quote[i, Con_FieldName_LastLowestAsk] <- env[[datatable_name_tick]][[Con_Data_ColName_Open]][j]
+        mkt_quote[i, Con_Data_ColName_LastNumTicks] <- 0
+        mkt_quote[i, Con_Data_ColName_LastVolume] <- 0
+        mkt_quote[i, Con_Data_ColName_LastValue] <- 0
+      }
       
     }
     else if (time_since_open == time_1600){
       # 15:59 close tick,val/vol/tick
       
       j <- (1:nrow(env[[datatable_name_tick]]))[env[[datatable_name_tick]][[Con_Data_ColName_Date]] == time - 60]
-      mkt_quote[i, Con_FieldName_Sym] <- symbol[i]
-      mkt_quote[i, Con_FieldName_CurrentBid] <- env[[datatable_name_tick]][[Con_Data_ColName_LastPrice]][j]
-      mkt_quote[i, Con_FieldName_CurrentAsk] <- env[[datatable_name_tick]][[Con_Data_ColName_LastPrice]][j]
-      mkt_quote[i, Con_FieldName_CurrentTick] <- env[[datatable_name_tick]][[Con_Data_ColName_LastPrice]][j]
-      mkt_quote[i, Con_FieldName_LastHighestBid] <- env[[datatable_name_bid]][[Con_Data_ColName_High]][j]
-      mkt_quote[i, Con_FieldName_LastLowestAsk] <- env[[datatable_name_ask]][[Con_Data_ColName_Low]][j]
-      mkt_quote[i, Con_Data_ColName_LastNumTicks] <- env[[datatable_name_tick]][[Con_Data_ColName_NumTicks]][j]
-      mkt_quote[i, Con_Data_ColName_LastVolume] <- env[[datatable_name_tick]][[Con_Data_ColName_Volume]][j]
-      mkt_quote[i, Con_Data_ColName_LastValue] <- env[[datatable_name_tick]][[Con_Data_ColName_Value]][j]
+      if (length(j) == 0){
+        return (mkt_quote)
+      }
+      else{
+        mkt_quote[i, Con_FieldName_Sym] <- symbol[i]
+        mkt_quote[i, Con_FieldName_CurrentBid] <- env[[datatable_name_tick]][[Con_Data_ColName_LastPrice]][j]
+        mkt_quote[i, Con_FieldName_CurrentAsk] <- env[[datatable_name_tick]][[Con_Data_ColName_LastPrice]][j]
+        mkt_quote[i, Con_FieldName_CurrentTick] <- env[[datatable_name_tick]][[Con_Data_ColName_LastPrice]][j]
+        mkt_quote[i, Con_FieldName_LastHighestBid] <- env[[datatable_name_bid]][[Con_Data_ColName_High]][j]
+        mkt_quote[i, Con_FieldName_LastLowestAsk] <- env[[datatable_name_ask]][[Con_Data_ColName_Low]][j]
+        mkt_quote[i, Con_Data_ColName_LastNumTicks] <- env[[datatable_name_tick]][[Con_Data_ColName_NumTicks]][j]
+        mkt_quote[i, Con_Data_ColName_LastVolume] <- env[[datatable_name_tick]][[Con_Data_ColName_Volume]][j]
+        mkt_quote[i, Con_Data_ColName_LastValue] <- env[[datatable_name_tick]][[Con_Data_ColName_Value]][j]
+      }
     }
     
     else if (time_since_open >= time_931 & time_since_open <= time_1559){
       j <- (1:nrow(env[[datatable_name_tick]]))[env[[datatable_name_tick]][[Con_Data_ColName_Date]] == time]
-      mkt_quote[i, Con_FieldName_Sym] <- symbol[i]
-      mkt_quote[i, Con_FieldName_CurrentBid] <- env[[datatable_name_bid]][[Con_Data_ColName_Open]][j]
-      mkt_quote[i, Con_FieldName_CurrentAsk] <- env[[datatable_name_ask]][[Con_Data_ColName_Open]][j]
-      mkt_quote[i, Con_FieldName_CurrentTick] <- env[[datatable_name_tick]][[Con_Data_ColName_Open]][j]
-      mkt_quote[i, Con_FieldName_LastHighestBid] <- env[[datatable_name_bid]][[Con_Data_ColName_High]][j-1]
-      mkt_quote[i, Con_FieldName_LastLowestAsk] <- env[[datatable_name_ask]][[Con_Data_ColName_Low]][j-1]
-      mkt_quote[i, Con_Data_ColName_LastNumTicks] <- env[[datatable_name_tick]][[Con_Data_ColName_NumTicks]][j-1]
-      mkt_quote[i, Con_Data_ColName_LastVolume] <- env[[datatable_name_tick]][[Con_Data_ColName_Volume]][j-1]
-      mkt_quote[i, Con_Data_ColName_LastValue] <- env[[datatable_name_tick]][[Con_Data_ColName_Value]][j-1]
+      if (length(j) == 0){
+        return (mkt_quote)
+      }
+      else{
+        mkt_quote[i, Con_FieldName_Sym] <- symbol[i]
+        mkt_quote[i, Con_FieldName_CurrentBid] <- env[[datatable_name_bid]][[Con_Data_ColName_Open]][j]
+        mkt_quote[i, Con_FieldName_CurrentAsk] <- env[[datatable_name_ask]][[Con_Data_ColName_Open]][j]
+        mkt_quote[i, Con_FieldName_CurrentTick] <- env[[datatable_name_tick]][[Con_Data_ColName_Open]][j]
+        mkt_quote[i, Con_FieldName_LastHighestBid] <- env[[datatable_name_bid]][[Con_Data_ColName_High]][j-1]
+        mkt_quote[i, Con_FieldName_LastLowestAsk] <- env[[datatable_name_ask]][[Con_Data_ColName_Low]][j-1]
+        mkt_quote[i, Con_Data_ColName_LastNumTicks] <- env[[datatable_name_tick]][[Con_Data_ColName_NumTicks]][j-1]
+        mkt_quote[i, Con_Data_ColName_LastVolume] <- env[[datatable_name_tick]][[Con_Data_ColName_Volume]][j-1]
+        mkt_quote[i, Con_Data_ColName_LastValue] <- env[[datatable_name_tick]][[Con_Data_ColName_Value]][j-1]
+      }
     }
     else{
     }

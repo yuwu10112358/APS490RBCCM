@@ -2,6 +2,7 @@ rm(list = ls())
 source('constants.r')
 source('backtest_lib.r')
 source('data_cleaning.r')
+source('strategy_hmm.r')
 library(XLConnect)
 #library(knitr)
 
@@ -60,6 +61,7 @@ import_data(global_tables)
 # output <- output(global_tables$tradesbook, global_tables$positionbook, global_tables$ask_price, 
 #                   global_tables$bid_price, globa_tables$market_data)
 
+system.time({test_HMMM(global_tables, 'BNS', 5, 4)})
 
 
 

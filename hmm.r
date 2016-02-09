@@ -79,21 +79,26 @@ EM <- function (p_increment, volume, num_states){
 }
 
 calc_forward <- function(num_states, N, Tnum, A, p_increment, mu, sigma_mu, volume, eta, sigma_eta){
+  if (N == 1){
+    dim(p_increment) <- c(1, length(p_increment))
+    dim(volume) <- c(1, length(volume))
+  }
   log_alpha <- array(0, c(num_states, Tnum, N))
   #get the initial prob
   log_alpha[, 1, ] <- state_log_lik(matrix(p_increment[,1], nrow = num_states, ncol = dim(p_increment)[1], byrow = TRUE),
                                mu, sigma_mu,
                                matrix(volume[,1], nrow = num_states, ncol = dim(volume)[1], byrow = TRUE),
                                eta, sigma_eta)
-  
-  for (t in 2: dim(p_increment)[2]){
-    
-    log_diff <- exp(log_alpha[, t-1, ] - matrix(apply(log_alpha[, t-1, ], 2, max), nrow = num_states, ncol = dim(volume)[1], byrow = TRUE))
-    log_alpha[, t, ] <- t(log(t(log_diff) %*% A)) + matrix(apply(log_alpha[, t-1, ], 2, max), nrow = num_states, ncol = dim(volume)[1], byrow = TRUE) + 
-      state_log_lik(matrix(p_increment[,t], nrow = num_states, ncol = dim(p_increment)[1], byrow = TRUE),
-                    mu, sigma_mu,
-                    matrix(volume[,t], nrow = num_states, ncol = dim(volume)[1], byrow = TRUE),
-                    eta, sigma_eta)
+  if (dim(p_increment)[2] > 1){
+    for (t in 2: dim(p_increment)[2]){
+      
+      log_diff <- exp(log_alpha[, t-1, ] - matrix(apply(matrix(log_alpha[, t-1, ], nrow = num_states, ncol = N), 2, max), nrow = num_states, ncol = dim(volume)[1], byrow = TRUE))
+      log_alpha[, t, ] <- t(log(t(log_diff) %*% A)) + matrix(apply(matrix(log_alpha[, t-1, ], nrow = num_states, ncol = N), 2, max), nrow = num_states, ncol = dim(volume)[1], byrow = TRUE) + 
+        state_log_lik(matrix(p_increment[,t], nrow = num_states, ncol = dim(p_increment)[1], byrow = TRUE),
+                      mu, sigma_mu,
+                      matrix(volume[,t], nrow = num_states, ncol = dim(volume)[1], byrow = TRUE),
+                      eta, sigma_eta)
+    }
   }
   return (log_alpha)
 }

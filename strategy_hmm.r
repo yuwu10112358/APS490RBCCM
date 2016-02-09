@@ -2,9 +2,11 @@ source('hmm.r')
 source('constants.r')
 source('backtest_lib.r')
 test_HMMM <- function (env, symbol, time_interval, num_states){
-#     env <- global_tables
-#     symbol = "BNS"
-#     time_interval = 5
+    env <- global_tables
+    symbol = "BNS"
+    time_interval = 5
+    num_states = 4
+    
   datatable_name <- paste(symbol, Con_Data_Tick_Suffix, sep = "")
   timestamp <- env[[datatable_name]][[Con_Data_ColName_Date]]
   value <- env[[datatable_name]][[Con_Data_ColName_Value]]
@@ -18,29 +20,25 @@ test_HMMM <- function (env, symbol, time_interval, num_states){
   #split the data into days
   #assume there is always data at 15:59
   
+  cat('Retrieving data \n')
   time_since_open <- rep(0, length(timestamp))
+  num_of_minutes <- 390
+   
   
   for (i in 1: length(timestamp))
       time_since_open[i] <- get_time_since_open(timestamp[i])
     
+  N <- sum(time_since_open == 0)
+  start_of_day_indices <- (1:length(timestamp))[time_since_open == 0]
+  num_of_lines_per_day <- start_of_day_indices[2] - start_of_day_indices[1]
   
-  N <- sum(time_since_open == 23340)
-  value_by_day <- matrix(-1, nrow = N, ncol = 390)
-  volume_by_day <- matrix(-1, nrow = N, ncol = 390)
-  time_by_day <- matrix(-1, nrow = N, ncol = 390)
+  value_by_day <- matrix(-1, nrow = N, ncol = num_of_minutes)
+  volume_by_day <- matrix(-1, nrow = N, ncol = num_of_minutes)
   
-  current_day_index <- 1
-  day_index <- 1
   
-  for (i in 1:length(timestamp)){
-    value_by_day[day_index, current_day_index] = value[i]
-    volume_by_day[day_index, current_day_index] = volume[i]
-    time_by_day[day_index, current_day_index] = time_since_open[i]
-    current_day_index = current_day_index + 1
-    if (time_since_open[i] == 23340){
-      day_index = day_index + 1
-      current_day_index = 1
-    }
+  for (i in 1:N){
+    value_by_day[i,] = value[(i - 1) * num_of_lines_per_day + (1:num_of_minutes)]
+    volume_by_day[i,] = volume[(i - 1) * num_of_lines_per_day + (1:num_of_minutes)]
   }
   
   #time_interval = 5 #denote minutes
@@ -52,37 +50,18 @@ test_HMMM <- function (env, symbol, time_interval, num_states){
   interval_volume = matrix(0, nrow = N, ncol = Tnum)
   VWAP[,1] = env[[datatable_name]][[Con_Data_ColName_Open]][time_since_open == 0]
   for (n in 1:N){
-    cumul_volume <- 0
-    cumul_value <- 0
-    t_marker_iterator <- 1
-    for (t in 1:390){
-      if (time_by_day[n, t] >= t_marker[t_marker_iterator]){
-        interval_volume[n, t_marker_iterator] = cumul_volume
-        if (cumul_volume == 0){
-          VWAP[n, t_marker_iterator + 1] = 0
-        }
-        else{
-          VWAP[n, t_marker_iterator + 1] = cumul_value / cumul_volume
-        }
-        t_marker_iterator = t_marker_iterator + 1
-        cumul_value = 0
-        cumul_volume = 0
-      }
-      cumul_value = cumul_value + value_by_day[n, t]
-      cumul_volume = cumul_volume + volume_by_day[n, t]
-      if (time_by_day[n, t] == 23340){
-        interval_volume[n, t_marker_iterator] = cumul_volume
-        if (cumul_volume == 0){
-          VWAP[n, t_marker_iterator + 1] = 0
-        }
-        else{
-          VWAP[n, t_marker_iterator + 1] = cumul_value / cumul_volume
-        }
-        break
+    interval_volume[n,] <- colSums(matrix(volume_by_day[n,], nrow = time_interval, ncol = Tnum))
+    VWAP[n,2:(Tnum + 1)] <- colSums(matrix(value_by_day[n,], nrow = time_interval, ncol = Tnum)) / interval_volume[n,]
+    #correct NaN prices. This is caused by the interval volume being 0. In this case VWAP is the same 
+    #as the last time period.
+    for(t in 2:(Tnum + 1)){
+      if (is.nan(VWAP[n, t])){
+        VWAP[n, t] = VWAP[n, t - 1]
       }
     }
-    
   }
+  
+  
   p_increments <- VWAP[,2:(Tnum + 1)] - VWAP[,1:Tnum]
   
   # remove outliers 
@@ -93,20 +72,30 @@ test_HMMM <- function (env, symbol, time_interval, num_states){
   p_increments_training <- p_increments[training_days,]
   volume_training <- interval_volume[training_days,]
   
+  cat('get parameter estimates \n')
+  
   estimates <- get_params_estimates(p_increments_training, volume_training, num_states)
   
-  A <- data.matrix(estimates[["A"]])
-  mu <- data.matrix(estimates[["mu"]])
-  sigma_mu <- data.matrix(estimates[["sigma_mu"]])
-  eta <- data.matrix(estimates[["eta"]])
-  sigma_eta <- data.matrix((estimates[["sigma_eta"]]))
+  A <- t(matrix(data.matrix(estimates[["A"]]), nrow = num_states, ncol = num_states))
+  mu <- t(data.matrix(estimates[["mu"]]))
+  sigma_mu <- t(data.matrix(estimates[["sigma_mu"]]))
+  eta <- t(data.matrix(estimates[["eta"]]))
+  sigma_eta <- t(data.matrix((estimates[["sigma_eta"]])))
   
-  performance_test(env, symbol, num_states, A, mu, sigma_mu, eta, sigma_eta)
+  start_time <- timestamp[1]
+  start_time <- as.POSIXct('2015-05-25 9:30:00 EDT')
+  end_time <- timestamp[length(timestamp) - 1]
+  
+  cat('run performance testing \n')
+  system.time({predictions <- performance_test(start_time, end_time, env, symbol, time_interval, num_states, A, mu, sigma_mu, eta, sigma_eta)})
+  
 }
 
 get_params_estimates <- function (p_increments_training, volume_training, num_states)
 {
   remove_pct <- 0.05
+  
+  Tnum <- ncol(p_increments_training)
   
   p_inc_filter <- quantile(as.vector(p_increments_training), c(remove_pct * (1/Tnum), 1 - remove_pct * (1/Tnum)))
   vol_filter <- quantile(as.vector(volume_training), c(remove_pct * (1/Tnum), 1 - remove_pct * (1/Tnum)))
@@ -128,7 +117,7 @@ get_params_estimates <- function (p_increments_training, volume_training, num_st
   sigma_eta_estimates <- matrix(0, nrow = num_estimates, ncol = num_states)
   for (i in 1: num_estimates){
     tr_indices <- sample(1:nrow(p_increments_aft_filter), rand_size)
-    estimate <- EM(p_increments_aft_filter[tr_indices,], log(volume_aft_filter[tr_indices,]), num_states)
+    estimate <- EM(p_increments_aft_filter[tr_indices,], log(volume_aft_filter[tr_indices,] + 1), num_states)
     A_estimates[i,,] <- data.matrix(estimate[["A"]])
     mu_estimates[i,] <- data.matrix(estimate[["mu"]])
     sigma_mu_estimates[i,] <- data.matrix(estimate[["sigma_mu"]])
@@ -170,6 +159,7 @@ performance_test <- function(start_time, end_time, env, symbol, time_interval, n
   prediction_list <- matrix(NA, 0, Tnum)
   p_increment_list <- matrix(NA, 0, Tnum)
   while (current_time <= end_time){
+    
     quotes <- getquotes(env, symbol, current_time)
     if (sum(is.na(quotes)) != 0){
       current_time <- current_time + 60
@@ -189,6 +179,7 @@ performance_test <- function(start_time, end_time, env, symbol, time_interval, n
         VWAP_prices <- quotes[,Con_FieldName_CurrentTick]
         interval_volume <- vector()
         predicted_price_direction <- NA
+        cat('testing ', strftime(current_time, format = "%F"), '\n')
       }
       else if (time_since_open == 23400){
         last_interval_VWAP_price <- cumul_value / cumul_volume
@@ -198,24 +189,33 @@ performance_test <- function(start_time, end_time, env, symbol, time_interval, n
         prediction_list <- rbind(prediction_list, predicted_price_direction)
         p_increment_list <- rbind(p_increment_list, p_increment)
         
+        current_time = current_time + 60 * 60 * 16
       }
       else{
         #price prediction
-        last_interval_VWAP_price <- cumul_value / cumul_volume
+        if (cumul_volume == 0){
+          last_interval_VWAP_price <- 0
+        }
+        else{
+          last_interval_VWAP_price <- cumul_value / cumul_volume
+        }
         last_interval_volume <- cumul_volume
         VWAP_prices <- append(VWAP_prices, last_interval_VWAP_price)
         interval_volume <- append(interval_volume, last_interval_volume)
         p_increment <- VWAP_prices[2:length(VWAP_prices)] - VWAP_prices[1:(length(VWAP_prices) - 1)]
-        log_alpha <- calc_forward(1, length(interval_volume), A, p_increment, mu, sigma_mu, interval_volume, eta, sigma_eta)
+        log_alpha <- calc_forward(num_states, 1, length(interval_volume), A, p_increment, mu, sigma_mu, log(interval_volume + 1), eta, sigma_eta)
         last_period_alpha <- log_alpha[,length(interval_volume), 1]
         alpha <- exp(last_period_alpha - max(last_period_alpha))
         states_prob <- alpha / sum(alpha)
-        next_period_prob <- t(states_prob) %*% A
-        expected_mu <- next_period_prob * mu
-        if (mu > 0){
+        next_period_prob <- t(t(states_prob) %*% A)
+        expected_mu <- sum(next_period_prob * mu)
+        if (current_time > as.POSIXct('2015-05-25 10:00:00 EDT')){
+          l1 <- 0
+        }
+        if (expected_mu > 0){
           predicted_price_direction <- append(predicted_price_direction, TRUE)
         }
-        else if (mu < 0){
+        else if (expected_mu < 0){
           predicted_price_direction <- append(predicted_price_direction, FALSE)
         }
         else{
@@ -260,7 +260,7 @@ performance_test <- function(start_time, end_time, env, symbol, time_interval, n
     current_time <- current_time + 60
     
   }
-  
+  return(prediction_list)
   
 }
 
