@@ -1,9 +1,9 @@
 
 # Simple Moving Average
 
-current_time  <- 25
-market_close  <- head(AC_tick$LAST_PRICE,100)
-duration      <- 10
+#current_time  <- 25
+#market_close  <- head(AC_tick$LAST_PRICE,100)
+#duration      <- 10
 
 
 SMA<- function(current_time, duration,market_close){
