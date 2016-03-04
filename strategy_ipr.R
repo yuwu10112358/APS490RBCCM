@@ -1,5 +1,5 @@
 # source('backtest_lib.r')
-source(SMA.R)
+source('SMA.R')
 
 return_and_stdev <- function(prices){
   for (i in 2:NROW(prices)){
@@ -13,16 +13,17 @@ return_and_stdev <- function(prices){
   return(list(ret=final_return, stdev=final_stdev))
 }
 
-#####################   Snow      ##########################
 strategy_impliedpricerisk <- function(Stocks, env){
   # Active portion of strategy
   IPR_df <- data.frame(Date = as.character(), Symbol = as.character(), IPR = as.integer())
   #Stocks <- c("AC", "BNS", "BMO")
   EquityList <- c("tick", "ask", "bid")
   jump <- 13
-  endtime <- 391
+  endtime <- 3910
   # if SMA tool = 1, then short sma > long sma and we buy, and vice versa
-  smatool <- data.frame(Symbol = as.character(), sma = as.integer())
+  smatool <- data.frame(matrix(2, nrow = length(Stocks), ncol = 2))
+  colnames(smatool) <- c("Symbol", "sma")
+  smatool$Symbol <- Stocks
   stock_data <- paste(Stocks[1],EquityList[1],sep="_")
   totaltime <- env[[stock_data]][["Date"]][1:endtime]
   actiontime <- totaltime[seq(1,endtime,30)] # Times to perform active portion
@@ -36,7 +37,7 @@ strategy_impliedpricerisk <- function(Stocks, env){
   
   looprow <- length(totaltime) # Assuming starttime and endtime are times in seconds
   
-  # cat(looprow)
+  cat(looprow)
   
   #Define data
   
@@ -44,11 +45,11 @@ strategy_impliedpricerisk <- function(Stocks, env){
     #check market condition
     IPR_df <- data.frame()
     
-    response <- update_pendingorderbook(env, totaltime[i],stock)
+    response <- update_pendingorderbook(env, totaltime[i],Stocks)
     
     # Passive portion
     if (nrow(response)!=0){
-      smatool <- passiveupdate(response, i, env, Stocks, smatool))
+      smatool <- passiveupdate(response, i, env, Stocks, smatool)
     }
     
     for (stock in Stocks){
@@ -56,8 +57,8 @@ strategy_impliedpricerisk <- function(Stocks, env){
       tick_data <- env[[stock_data]]
       
       #active portion of strategy
-      if (totaltime[i] == actiontime[floor(actcounter)]){ 
-        actcounter <- actcounter + 1/length(Stocks)
+      if (totaltime[i] == actiontime[actcounter]){ 
+        
         orderline = data.frame(matrix(NA, 0, length(order_msg_spec)))
         colnames(orderline) <- order_msg_spec
         
@@ -72,7 +73,7 @@ strategy_impliedpricerisk <- function(Stocks, env){
         IPR_df <- rbind(IPR_df, data.frame(Date = totaltime[i], Symbol = stock, IPR = IPR))
         
         if (stock == Stocks[length(Stocks)]){
-          if (floor(actcounter) == 1){
+          if (actcounter == 1){
             currposition <- global_tables$positionbook[["0"]]
           } else {
             currposition <- global_tables[["positionbook"]][[length(global_tables[["positionbook"]])]]
@@ -130,7 +131,12 @@ strategy_impliedpricerisk <- function(Stocks, env){
             #           print(response)
           }
           response <- handle_orders(orderline, Stocks, global_tables, as.character(totaltime[i]))
-          smatool <- passiveupdate(response, i, env, Stocks, smatool)
+          # smatool <- passiveupdate(response, i, env, Stocks, smatool)
+          if (actcounter != length(actiontime)){
+            actcounter <- actcounter + 1
+          } else {
+            actcounter <- length(actiontime)
+          }
         }
       }
     }
@@ -142,19 +148,24 @@ passiveupdate <- function(response, i, env, Stocks, smatool){
   longdur <- 25
   shortdur <- 10
   for (stock in Stocks){
-    stock_data <- paste(stock,EquityList[1],sep="_")
+    stock_data <- paste(stock,"tick",sep="_")
     tick_data <- env[[stock_data]]
-    if (SMA(i, shortdur,tick_data) <= SMA(i,longdur, tick_data)){
-      if smatool$symbol[sma] == 1{
+    if (SMA(i, shortdur,tick_data$LAST_PRICE) <= SMA(i,longdur, tick_data$LAST_PRICE)){
+      if (smatool[which(smatool$Symbol == stock),"sma"] == 1){
         # Submit order to sell
+      } else {
+        smatool[which(smatool$Symbol == stock),"sma"] == 0
       }
+      smatool[which(smatool$Symbol == stock),"sma"] == 0
     } else {
-      if smatool$symbol[sma] == 0{
+      if (smatool[which(smatool$Symbol == stock),"sma"] == 0){
         # Submit order to buy
+      } else {
+        smatool[which(smatool$Symbol == stock),"sma"] == 1
       }
-    }
-        
+      smatool[which(smatool$Symbol == stock),"sma"] == 1
     }
   }
 }
+
 ##################################################
