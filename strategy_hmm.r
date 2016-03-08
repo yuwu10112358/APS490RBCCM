@@ -64,17 +64,20 @@ test_HMMM <- function (env, symbol, time_interval, num_states){
   
   p_increments <- VWAP[,2:(Tnum + 1)] - VWAP[,1:Tnum]
   
-  # remove outliers 
-  
-  training_days <- c(1:60)
+  N = 60
+  training_days <- c(1:N)
   
   #qqnorm(as.vector(log(interval_volume[1:60,])))
   p_increments_training <- p_increments[training_days,]
-  volume_training <- interval_volume[training_days,]
+  log_volume_training <- log(interval_volume[training_days,] + 1)
   num_var <- 2
+  training_data <- array(0, c(num_var, N, Tnum))
+  training_data[1,,] <- p_increments_training
+  training_data[2,,] <- log_volume_training
+  
   cat('get parameter estimates \n')
   
-  estimates <- get_params_estimates(p_increments_training, volume_training, num_var, num_states)
+  estimates <- get_params_estimates(training_data, num_var, num_states)
   
   A <- matrix(data.matrix(estimates[["A"]]), nrow = num_states, ncol = num_states)
   mu <- data.matrix(estimates[["mu"]])
@@ -84,7 +87,7 @@ test_HMMM <- function (env, symbol, time_interval, num_states){
   start_time <- timestamp[1]
 
   start_time <- as.POSIXct('2015-05-13 9:30:00 EDT')
-  end_time <- as.POSIXct('2015-09-18 15:59:00 EDT')
+  end_time <- as.POSIXct('2015-06-18 15:59:00 EDT')
   
   cat('run performance testing \n')
   system.time({predictions <- performance_test(start_time, end_time, env, symbol, time_interval, num_states, num_var, A, mu, cov_mat)})
@@ -107,25 +110,24 @@ test_HMMM <- function (env, symbol, time_interval, num_states){
   return(sum(comparison[!is.na(comparison)]) / (nrow(comparison) * ncol(comparison)))
 }
 
-get_params_estimates <- function (p_increments_training, volume_training, num_var, num_states)
+get_params_estimates <- function (training_data, num_var, num_states)
 {
-
+  #training data is v X N X T matrix, where v is the number of state_variables, N is the number of time series, and T is the number of timesteps
   remove_pct <- 0.05
   
-  Tnum <- ncol(p_increments_training)
+  Tnum <- dim(training_data)[3]
+  N <- dim(training_data)[2]
   
-  p_inc_filter <- quantile(as.vector(p_increments_training), c(remove_pct * (1/Tnum), 1 - remove_pct * (1/Tnum)))
-  vol_filter <- quantile(as.vector(volume_training), c(remove_pct * (1/Tnum), 1 - remove_pct * (1/Tnum)))
-    
-  rows_to_remove <- (apply(p_increments_training, 1, max) > p_inc_filter[2]) | 
-                                    (apply(p_increments_training, 1, min) < p_inc_filter[1])
-   
-  rows_to_remove2 <- (apply(volume_training, 1, max) > vol_filter[2]) |
-                                    (apply(volume_training, 1, min) < vol_filter[1])
-  p_increments_aft_filter <- p_increments_training[!(rows_to_remove | rows_to_remove2),]
-  volume_aft_filter <- volume_training[!(rows_to_remove | rows_to_remove2),]
+  rows_to_remove <- rep(FALSE, N)
   
-  rand_size = nrow(p_increments_aft_filter)
+  for (i in 1:num_var){
+    filter <- quantile(as.vector(training_data[i,,]), c(remove_pct * (1/Tnum), 1 - remove_pct * (1/Tnum)))
+    rows_to_remove <- rows_to_remove | (apply(training_data[i,,], 1, max) > filter[2]) | 
+      (apply(training_data[i,,], 1, min) < filter[1])
+  }
+  data_aft_filter <- training_data[,!rows_to_remove,]
+  
+  rand_size = dim(data_aft_filter)[2]
   num_estimates <- 1
   
   #order of state parameters: p_increments then log volume
@@ -136,10 +138,11 @@ get_params_estimates <- function (p_increments_training, volume_training, num_va
   cov_mat_estimates <- array(0, c(num_var, num_var, num_states, num_estimates))
   
   for (i in 1: num_estimates){
-    tr_indices <- sample(1:nrow(p_increments_aft_filter), rand_size)
+    tr_indices <- sample(1:dim(data_aft_filter)[2], rand_size)
     test_data = array(0, c(num_var, Tnum, rand_size))
-    test_data[1,,] <- t(p_increments_aft_filter[tr_indices,])
-    test_data[2,,] <- t(log(volume_aft_filter[tr_indices,] + 1))
+    for (j in 1:num_var){
+      test_data[j,,] <- t(data_aft_filter[j,tr_indices,])
+    }
     estimate <- EM(test_data, num_states)
     A_estimates[,,i] <- data.matrix(estimate[["A"]])
     mu_estimates[,,i] <- data.matrix(estimate[["mu"]])
