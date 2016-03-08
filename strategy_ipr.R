@@ -16,10 +16,31 @@ return_and_stdev <- function(prices){
 strategy_impliedpricerisk <- function(Stocks, env){
   # Active portion of strategy
   IPR_df <- data.frame(Date = as.character(), Symbol = as.character(), IPR = as.integer())
+  
+  global_tables[[Con_GlobalVarName_LOB]]<- data.frame(matrix(0, 0, length(orderbook_spec)))
+  colnames(global_tables[[Con_GlobalVarName_LOB]]) <- orderbook_spec
+  
+  #the position book is a list of data frames
+  init_pos <- data.frame(matrix(0, 1, length(positionbook_spec)))
+  colnames(init_pos) <- positionbook_spec
+  init_pos[,Con_FieldName_Sym] = Con_Sym_Cash
+  init_pos[,c(Con_FieldName_Qty, Con_FieldName_BookVal, Con_FieldName_MktVal)] = init_cash
+  
+  global_tables[[Con_GlobalVarName_PositionBook]] <- list(init_pos)
+  names(global_tables[[Con_GlobalVarName_PositionBook]])[1] = 0
+  
+  global_tables[[Con_GlobalVarName_TradesBook]] <- data.frame(matrix(0, 0, length(tradesbook_spec)))
+  colnames(global_tables[[Con_GlobalVarName_TradesBook]]) <- tradesbook_spec
+  
+  global_tables[[Con_GlobalVarName_MktPrice]] <- list(vector())
+  global_tables[[Con_GlobalVarName_BidPrice]] <- list(vector())
+  global_tables[[Con_GlobalVarName_AskPrice]] <- list(vector())
+  global_tables[[Con_GlobalVarName_ListDates]] <- list(vector())
+  
   #Stocks <- c("AC", "BNS", "BMO")
   EquityList <- c("tick", "ask", "bid")
   jump <- 13
-  endtime <- 3910
+  endtime <- 390
   # if SMA tool = 1, then short sma > long sma and we buy, and vice versa
   smatool <- data.frame(matrix(2, nrow = length(Stocks), ncol = 2))
   colnames(smatool) <- c("Symbol", "sma")
@@ -27,7 +48,6 @@ strategy_impliedpricerisk <- function(Stocks, env){
   stock_data <- paste(Stocks[1],EquityList[1],sep="_")
   totaltime <- env[[stock_data]][["Date"]][1:endtime]
   actiontime <- totaltime[seq(1,endtime,30)] # Times to perform active portion
-  actiontime <- actiontime[-c(which(strftime(actiontime, format="%H:%M:%S") == "16:00:00",arr.ind = TRUE))]
   actiontime <- actiontime[-c(which(strftime(actiontime, format="%H:%M:%S") == "09:30:00",arr.ind=TRUE))]
 
   actcounter <- 1 # count for which action time we are on
@@ -86,13 +106,17 @@ strategy_impliedpricerisk <- function(Stocks, env){
           } else {
             for (s in 2:nrow(currposition)){
               stock = currposition$Symbol[s]
+              stock_data <- paste(stock,EquityList[1],sep="_")
+              tick_data <- env[[stock_data]]
               totalvalue <- totalvalue + currposition$Quantity[s]*tick_data[i,"LAST_PRICE"]
             }
           }
+          
           for (b in 1:nrow(IPR_df)){
             stock = as.character(IPR_df$Symbol[b])
             stock_data <- paste(stock,EquityList[1],sep="_")
             tick_data <- env[[stock_data]]
+
             # assign percentages to each stock for cash allocations
             cash_alloc <- -(IPR_df[b, "IPR"]) + 0.5
             # send an order to the market with sell and using the existing cash * appropriate Pct
