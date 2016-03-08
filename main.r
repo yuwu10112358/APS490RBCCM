@@ -52,9 +52,6 @@ names(global_tables[[Con_GlobalVarName_PositionBook]])[1] = 0
 global_tables[[Con_GlobalVarName_TradesBook]] <- data.frame(matrix(0, 0, length(tradesbook_spec)))
 colnames(global_tables[[Con_GlobalVarName_TradesBook]]) <- tradesbook_spec
 
-global_tables[[Con_GlobalVarName_MktPrice]] <- list(vector())
-global_tables[[Con_GlobalVarName_BidPrice]] <- list(vector())
-global_tables[[Con_GlobalVarName_AskPrice]] <- list(vector())
 global_tables[[Con_GlobalVarName_ListDates]] <- list(vector())
 
 import_data(global_tables)
@@ -62,7 +59,7 @@ import_data(global_tables)
 # output <- output(global_tables$tradesbook, global_tables$positionbook, global_tables$ask_price, 
 #                   global_tables$bid_price, globa_tables$market_data)
 
-system.time({test_HMMM(global_tables, 'BNS', 5, 4)})
+system.time({predic_accuracy <- test_HMMM(global_tables, 'BNS', 5, 3)})
 
 
 

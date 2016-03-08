@@ -1,11 +1,11 @@
-source('hmm.r')
+source('hmm_v2.r')
 source('constants.r')
 source('backtest_lib.r')
 test_HMMM <- function (env, symbol, time_interval, num_states){
-    env <- global_tables
-    symbol = "BNS"
-    time_interval = 5
-    num_states = 4
+#     env <- global_tables
+#     symbol = "BNS"
+#     time_interval = 5
+#     num_states = 4
     
   datatable_name <- paste(symbol, Con_Data_Tick_Suffix, sep = "")
   timestamp <- env[[datatable_name]][[Con_Data_ColName_Date]]
@@ -71,23 +71,22 @@ test_HMMM <- function (env, symbol, time_interval, num_states){
   #qqnorm(as.vector(log(interval_volume[1:60,])))
   p_increments_training <- p_increments[training_days,]
   volume_training <- interval_volume[training_days,]
-  
+  num_var <- 2
   cat('get parameter estimates \n')
   
-  estimates <- get_params_estimates(p_increments_training, volume_training, num_states)
+  estimates <- get_params_estimates(p_increments_training, volume_training, num_var, num_states)
   
-  A <- t(matrix(data.matrix(estimates[["A"]]), nrow = num_states, ncol = num_states))
-  mu <- t(data.matrix(estimates[["mu"]]))
-  sigma_mu <- t(data.matrix(estimates[["sigma_mu"]]))
-  eta <- t(data.matrix(estimates[["eta"]]))
-  sigma_eta <- t(data.matrix((estimates[["sigma_eta"]])))
+  A <- matrix(data.matrix(estimates[["A"]]), nrow = num_states, ncol = num_states)
+  mu <- data.matrix(estimates[["mu"]])
+  cov_mat <- array(data.matrix(estimates[["cov_matrix"]]), c(num_var, num_var, num_states))
+  
   
   start_time <- timestamp[1]
   start_time <- as.POSIXct('2015-05-13 9:30:00 EDT')
-  end_time <- as.POSIXct('2015-05-15 15:59:00 EDT')
+  end_time <- as.POSIXct('2015-09-18 15:59:00 EDT')
   
   cat('run performance testing \n')
-  system.time({predictions <- performance_test(start_time, end_time, env, symbol, time_interval, num_states, A, mu, sigma_mu, eta, sigma_eta)})
+  system.time({predictions <- performance_test(start_time, end_time, env, symbol, time_interval, num_states, num_var, A, mu, cov_mat)})
   actual_directions <- matrix(NA, N, Tnum)
   for (i in 1:N){
     for (t in 1:Tnum){
@@ -104,11 +103,12 @@ test_HMMM <- function (env, symbol, time_interval, num_states){
   }
   
   comparison <- predictions[,2:Tnum] == actual_directions[1:nrow(predictions),2:Tnum]
-  sum(comparison[!is.na(comparison)]) / (nrow(comparison) * ncol(comparison))
+  return(sum(comparison[!is.na(comparison)]) / (nrow(comparison) * ncol(comparison)))
 }
 
-get_params_estimates <- function (p_increments_training, volume_training, num_states)
+get_params_estimates <- function (p_increments_training, volume_training, num_var, num_states)
 {
+
   remove_pct <- 0.05
   
   Tnum <- ncol(p_increments_training)
@@ -126,29 +126,32 @@ get_params_estimates <- function (p_increments_training, volume_training, num_st
   
   rand_size = nrow(p_increments_aft_filter)
   num_estimates <- 1
-  A_estimates <- array(0, c(num_estimates, num_states, num_states))
-  mu_estimates <- matrix(0, nrow = num_estimates, ncol = num_states)
-  sigma_mu_estimates <- matrix(0, nrow = num_estimates, ncol = num_states)
-  eta_estimates <- matrix(0, nrow = num_estimates, ncol = num_states)
-  sigma_eta_estimates <- matrix(0, nrow = num_estimates, ncol = num_states)
+  
+  #order of state parameters: p_increments then log volume
+  #num_estimates is always the last dimension
+  
+  A_estimates <- array(0, c(num_states, num_states, num_estimates))
+  mu_estimates <- array(0, c(num_var, num_states, num_estimates))
+  cov_mat_estimates <- array(0, c(num_var, num_var, num_states, num_estimates))
+  
   for (i in 1: num_estimates){
     tr_indices <- sample(1:nrow(p_increments_aft_filter), rand_size)
-    estimate <- EM(p_increments_aft_filter[tr_indices,], log(volume_aft_filter[tr_indices,] + 1), num_states)
-    A_estimates[i,,] <- data.matrix(estimate[["A"]])
-    mu_estimates[i,] <- data.matrix(estimate[["mu"]])
-    sigma_mu_estimates[i,] <- data.matrix(estimate[["sigma_mu"]])
-    eta_estimates[i,] <- data.matrix(estimate[["eta"]])
-    sigma_eta_estimates[i,] <- data.matrix(estimate[["sigma_eta"]])
+    test_data = array(0, c(num_var, Tnum, rand_size))
+    test_data[1,,] <- t(p_increments_aft_filter[tr_indices,])
+    test_data[2,,] <- t(log(volume_aft_filter[tr_indices,] + 1))
+    estimate <- EM(test_data, num_states)
+    A_estimates[,,i] <- data.matrix(estimate[["A"]])
+    mu_estimates[,,i] <- data.matrix(estimate[["mu"]])
+    cov_mat_estimates[,,,i] <- array(data.matrix(estimate[["covariance matrix"]]), c(num_var, num_var, num_states))
   }
   
   rtn <- list(data.frame(A_estimates), data.frame(mu_estimates),
-              data.frame(sigma_mu_estimates), data.frame(eta_estimates), 
-              data.frame(sigma_eta_estimates))
-  names(rtn) <- c('A', 'mu', 'sigma_mu', 'eta', 'sigma_eta')
+              data.frame(cov_mat_estimates))
+  names(rtn) <- c('A', 'mu', 'cov_matrix')
   return(rtn)
 }
 
-performance_test <- function(start_time, end_time, env, symbol, time_interval, num_states, A, mu, sigma_mu, eta, sigma_eta){
+performance_test <- function(start_time, end_time, env, symbol, time_interval, num_states, num_var, A, mu, cov_mat){
 
   #if for a symbol the quotes at a particular time is not available, then
   #it is filled in by the data of the last available minute (e.g, if at 9:33 the data
@@ -161,11 +164,11 @@ performance_test <- function(start_time, end_time, env, symbol, time_interval, n
   
   current_time <- start_time
   if (sum(is.na(getquotes(env, symbol, start_time))) != 0){
-    cat('Error: data not available at start time /n')
+    cat('Error: data not available at start time \n')
     return
   }
   else if(sum(is.na(getquotes(env, symbol, end_time))) != 0){
-    cat('Error: data not available at end time /n')
+    cat('Error: data not available at end time \n')
     return
   }
   
@@ -182,6 +185,9 @@ performance_test <- function(start_time, end_time, env, symbol, time_interval, n
   current_shares_to_trade <- 0
   future_shares_to_trade <- 0
   lot_size <- 100
+  
+  eod_value <- vector()
+  execution_dates <- vector()
   while (current_time <= end_time){
     
     quotes <- getquotes(env, symbol, current_time)
@@ -229,12 +235,16 @@ performance_test <- function(start_time, end_time, env, symbol, time_interval, n
         VWAP_prices <- append(VWAP_prices, last_interval_VWAP_price)
         interval_volume <- append(interval_volume, last_interval_volume)
         p_increment <- VWAP_prices[2:length(VWAP_prices)] - VWAP_prices[1:(length(VWAP_prices) - 1)]
-        log_alpha <- calc_forward(num_states, 1, length(interval_volume), A, p_increment, mu, sigma_mu, log(interval_volume + 1), eta, sigma_eta)
+        Tnum <- length(interval_volume)
+        test_data <- array(0, c(num_var, Tnum, 1))
+        test_data[1,,] <- p_increment
+        test_data[2,,] <- log(interval_volume + 1)
+        log_alpha <- calc_forward(num_states, 1, Tnum, num_var, A, mu, cov_mat, test_data)
         last_period_alpha <- log_alpha[,length(interval_volume), 1]
         alpha <- exp(last_period_alpha - max(last_period_alpha))
         states_prob <- alpha / sum(alpha)
         next_period_prob <- t(t(states_prob) %*% A)
-        expected_mu <- sum(next_period_prob * mu)
+        expected_mu <- sum(next_period_prob * mu[1,]) #only calculating expected p_increment for next time period
         if (current_time > as.POSIXct('2015-05-25 10:00:00 EDT')){
           l1 <- 0
         }
@@ -303,6 +313,9 @@ performance_test <- function(start_time, end_time, env, symbol, time_interval, n
           passive_processing(response)
         }
       }
+      last_pos <- env[[Con_GlobalVarName_PositionBook]][[length(env[[Con_GlobalVarName_PositionBook]])]]
+      eod_value <- append(eod_value, last_pos[last_pos[,Con_FieldName_Sym] == Con_Sym_Cash, Con_FieldName_MktVal])
+      execution_dates <- append(execution_dates, current_time)
       current_shares_to_trade <- 0
       future_shares_to_trade <- 0
     }
