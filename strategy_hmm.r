@@ -82,6 +82,7 @@ test_HMMM <- function (env, symbol, time_interval, num_states){
   
   
   start_time <- timestamp[1]
+
   start_time <- as.POSIXct('2015-05-13 9:30:00 EDT')
   end_time <- as.POSIXct('2015-09-18 15:59:00 EDT')
   
