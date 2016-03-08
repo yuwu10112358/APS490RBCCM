@@ -82,8 +82,8 @@ strategy_impliedpricerisk <- function(Stocks, env){
         orderline = data.frame(matrix(NA, 0, length(order_msg_spec)))
         colnames(orderline) <- order_msg_spec
         
-        P_asterix <- tick_data[i, "LAST_PRICE"]
-        P_asterix_j_date <-  tick_data[i - jump, "LAST_PRICE"]
+        P_asterix <- tick_data[i-1, "LAST_PRICE"]
+        P_asterix_j_date <-  tick_data[i - jump - 1, "LAST_PRICE"]
         start_row <- 1
         price_estimates <- data.frame(Price = tick_data[start_row:i, "LAST_PRICE"])
         ret1 <- return_and_stdev(price_estimates)$ret
