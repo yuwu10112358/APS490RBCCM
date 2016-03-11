@@ -6,7 +6,7 @@ obtainthreshold <- function(env, Stocks, startindx, lookback, jump){
   shortdur = 10
   iterations = 50
   increment = 0.01
-  results = data.frame(Date = as.character(), threshold = as.double(), difference = as.double())
+  results = data.frame(Date = as.character(), threshold = as.double(), error = as.double(), difference = as.double())
 
   IPR_df <- data.frame(Date = as.character(), Symbol = as.character(), IPR = as.integer(), Diff = as.double())
   
@@ -70,22 +70,23 @@ obtainthreshold <- function(env, Stocks, startindx, lookback, jump){
       }
       
       portreturn = sum(returns["return1"])
-      print (portreturn)
       if (abs(sum(returns["return1"])) < 20) {
-          results<-rbind(results,data.frame(Date = actiontime[j], threshold = threshold, difference = sum(returns["wdiff"])))
+          results<-rbind(results,data.frame(Date = actiontime[j], threshold = threshold, error = portreturn, difference = sum(returns["wdiff"])))
           break
       } else {
         if (abs(prevreturn) - abs(portreturn) > 0) {
-          direct = 1
           threshold <- threshold + direct * increment
         } else {
-          direct = -1
+          direct = -direct
           threshold <- threshold + direct * increment
         }
         prevreturn = portreturn
       }
+      if (k == iterations){
+        results<-rbind(results,data.frame(Date = actiontime[j], threshold = threshold, error = portreturn, difference = sum(returns["wdiff"])))
+      }
     }
       
   }
-  
+  return (results)
 }
