@@ -2,8 +2,8 @@ source('strategy_ipr.R')
 
 obtainthreshold <- function(env, Stocks, startindx, lookback, jump){
   
-  longdur = 25
-  shortdur = 10
+  longdur = 60
+  shortdur = 40
   iterations = 50
   increment = 0.01
   results = data.frame(Date = as.character(), threshold = as.double(), error = as.double(), difference = as.double())
@@ -19,6 +19,7 @@ obtainthreshold <- function(env, Stocks, startindx, lookback, jump){
   totaltime <- env[[stock_data]][["Date"]][(startindx - lookback):(startindx-1)]
   actiontime <- totaltime[seq(1,lookback,30)] # Times to perform active portion
   actiontime <- actiontime[-c(which(strftime(actiontime, format="%H:%M:%S") == "09:30:00",arr.ind=TRUE))]
+  actiontime <- actiontime[-c(which(strftime(actiontime, format="%H:%M:%S") == "10:00:00",arr.ind=TRUE))]
   looprow <- length(actiontime) # Assuming starttime and endtime are times in seconds
   for (j in 1:looprow) {
     IPR_df <- data.frame()
@@ -26,7 +27,7 @@ obtainthreshold <- function(env, Stocks, startindx, lookback, jump){
       # Calculate IPR and difference 
       stock_data <- paste(stock,EquityList[1],sep="_")
       tick_data <- env[[stock_data]]
-      currtime <- starttime+30*j
+      currtime <- starttime+30*j+30 ####################### SUPER HARD CODE ALERTTTT ##############
       P_asterix <- tick_data[currtime-1, "LAST_PRICE"]
       P_asterix_j_date <-  tick_data[currtime - jump-1, "LAST_PRICE"]
       start_row <- 1
@@ -36,6 +37,7 @@ obtainthreshold <- function(env, Stocks, startindx, lookback, jump){
       z <- (log(P_asterix/P_asterix_j_date) - jump * ret1) / (sqrt(jump * stdev))
       IPR <- pnorm(z)
       diff = (SMA(currtime, shortdur,tick_data$LAST_PRICE) - SMA(currtime, longdur,tick_data$LAST_PRICE))/tick_data$LAST_PRICE[currtime]
+      # diff = (SMA(currtime, shortdur,tick_data$LAST_PRICE) - SMA(currtime, longdur,tick_data$LAST_PRICE))
       IPR_df <- rbind(IPR_df, data.frame(Date = actiontime[j], Symbol = stock, IPR = IPR, Diff = diff))
     }
     # Allocate based on allocation function
@@ -57,7 +59,7 @@ obtainthreshold <- function(env, Stocks, startindx, lookback, jump){
         if (IPR_df[b, "IPR"] < threshold){
           cashalloc = -(0.5/threshold)*(IPR_df[b, "IPR"]) + 0.5
         } else {
-          cashalloc = -(threshold/0.5)*(IPR_df[b, "IPR"]) + (-0.5*threshold)/(-1+threshold)
+          cashalloc = -(0.5/(1-threshold))*(IPR_df[b, "IPR"]) + (-0.5*(1+1/(threshold-1)))
         }
         
         allocs = rbind(allocs, data.frame(Symbol = stock, Allocation = cashalloc))
@@ -86,7 +88,8 @@ obtainthreshold <- function(env, Stocks, startindx, lookback, jump){
         results<-rbind(results,data.frame(Date = actiontime[j], threshold = threshold, error = portreturn, difference = sum(returns["wdiff"])))
       }
     }
-      
   }
+  #results <- results[(-c(which(results$difference < -0.0008,arr.ind=TRUE))),]
+  results <- results[(-c(which(abs(results$error) > 20,arr.ind=TRUE))),]
   return (results)
 }
