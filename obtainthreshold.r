@@ -1,4 +1,3 @@
-source('strategy_ipr.R')
 
 obtainthreshold <- function(env, Stocks, startindx, lookback, jump){
   
@@ -27,15 +26,17 @@ obtainthreshold <- function(env, Stocks, startindx, lookback, jump){
       # Calculate IPR and difference 
       stock_data <- paste(stock,EquityList[1],sep="_")
       tick_data <- env[[stock_data]]
-      currtime <- starttime+30*j+30 ####################### SUPER HARD CODE ALERTTTT ##############
-      P_asterix <- tick_data[currtime-1, "LAST_PRICE"]
-      P_asterix_j_date <-  tick_data[currtime - jump-1, "LAST_PRICE"]
-      start_row <- 1
-      price_estimates <- data.frame(Price = tick_data[starttime:currtime, "LAST_PRICE"])
-      ret1 <- return_and_stdev(price_estimates)$ret
-      stdev <- return_and_stdev(price_estimates)$stdev
-      z <- (log(P_asterix/P_asterix_j_date) - jump * ret1) / (sqrt(jump * stdev))
-      IPR <- pnorm(z)
+      currtime <- starttime+30*j + 30 ####################### SUPER HARD CODE ALERTTTT ##############
+#       P_asterix <- tick_data[currtime-1, "LAST_PRICE"]
+#       P_asterix_j_date <-  tick_data[currtime - jump-1, "LAST_PRICE"]
+#       start_row <- 1
+#       price_estimates <- data.frame(Price = tick_data[starttime:currtime, "LAST_PRICE"])
+#       ret1 <- return_and_stdev(price_estimates)$ret
+#       stdev <- return_and_stdev(price_estimates)$stdev
+#       z <- (log(P_asterix/P_asterix_j_date) - jump * ret1) / (sqrt(jump * stdev))
+      weights <- c(1/3,1/3,1/3)
+      # IPR <- lowpassfilter(tick_data, currtime, jump, start_row, weights, 30)
+      IPR <- IPRcalc(tick_data, currtime, jump, start_row)
       diff = (SMA(currtime, shortdur,tick_data$LAST_PRICE) - SMA(currtime, longdur,tick_data$LAST_PRICE))/tick_data$LAST_PRICE[currtime]
       # diff = (SMA(currtime, shortdur,tick_data$LAST_PRICE) - SMA(currtime, longdur,tick_data$LAST_PRICE))
       IPR_df <- rbind(IPR_df, data.frame(Date = actiontime[j], Symbol = stock, IPR = IPR, Diff = diff))
@@ -71,8 +72,9 @@ obtainthreshold <- function(env, Stocks, startindx, lookback, jump){
         returns <- rbind(returns, data.frame(Symbol = stock, return1 = finalreturn, wdiff = cashalloc * IPR_df[b,"Diff"]))
       }
       
+      bound <- 5
       portreturn = sum(returns["return1"])
-      if (abs(sum(returns["return1"])) < 20) {
+      if (abs(sum(returns["return1"])) < bound) {
           results<-rbind(results,data.frame(Date = actiontime[j], threshold = threshold, error = portreturn, difference = sum(returns["wdiff"])))
           break
       } else {
@@ -89,7 +91,11 @@ obtainthreshold <- function(env, Stocks, startindx, lookback, jump){
       }
     }
   }
-  #results <- results[(-c(which(results$difference < -0.0008,arr.ind=TRUE))),]
-  results <- results[(-c(which(abs(results$error) > 20,arr.ind=TRUE))),]
-  return (results)
+  results <- results[(-c(which(results$difference < (quantile(results$difference)[2] - IQR(results$difference)) | 
+                                results$difference > (quantile(results$difference)[4] + IQR(results$difference)),arr.ind=TRUE))),]
+  results <- results[(-c(which(abs(results$error) > bound,arr.ind=TRUE))),]
+  reg <- lm(results$threshold~results$difference)
+  #plot(results$difference, results$threshold)
+  #abline(reg)
+  return (reg$coefficients)
 }
