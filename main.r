@@ -5,9 +5,11 @@ source('data_cleaning.r')
 source('strategy_hmm.r')
 library(XLConnect)
 #library(knitr)
-
-
-
+#install.packages("regpro")
+library("regpro")
+library(MASS)
+#install.packages("forecast")
+library("forecast")
 
 # notes 2015-11-20
 
@@ -59,7 +61,7 @@ import_data(global_tables)
 # output <- output(global_tables$tradesbook, global_tables$positionbook, global_tables$ask_price, 
 #                   global_tables$bid_price, globa_tables$market_data)
 
-system.time({predic_accuracy <- test_HMMM(global_tables, 'BNS', 5, 3)})
 
-
+system.time({predic_accuracy <- test_HMMM(global_tables, 'BMO', 5, 3)})
+result<-sum(comparison[!is.na(comparison)]) / (nrow(comparison) * ncol(comparison))
 
