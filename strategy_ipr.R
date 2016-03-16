@@ -17,7 +17,6 @@ return_and_stdev <- function(prices){
 IPRcalc <- function(tick_data, i, jump, start_row){
   P_asterix <- tick_data[i-1, "LAST_PRICE"]
   P_asterix_j_date <-  tick_data[i - jump - 1, "LAST_PRICE"]
-  start_row <- 1
   price_estimates <- data.frame(Price = tick_data[start_row:i, "LAST_PRICE"])
   ret1 <- return_and_stdev(price_estimates)$ret
   stdev <- return_and_stdev(price_estimates)$stdev
@@ -66,6 +65,7 @@ strategy_impliedpricerisk <- function(Stocks, env, starttime, trainperiod){
   endtime <- 1560
   longdur <- 60
   shortdur <- 40
+  evaltime <- 1560
   
   # if SMA tool = 1, then short sma > long sma and we buy, and vice versa
   smatool <- data.frame(matrix(2, nrow = length(Stocks), ncol = 2))
@@ -90,7 +90,10 @@ strategy_impliedpricerisk <- function(Stocks, env, starttime, trainperiod){
   for (i in 1:looprow){
     actualtime <- starttime + i
     if ((actualtime %% trainperiod) - 1 == 0){
+      start1 <- Sys.time()
       coffs <- obtainthreshold(env, Stocks, actualtime, trainperiod, jump)
+      print ("Regression model:")
+      print (Sys.time() - start1)
     }
     #check market condition
     IPR_df <- data.frame()
@@ -120,8 +123,11 @@ strategy_impliedpricerisk <- function(Stocks, env, starttime, trainperiod){
 #         stdev <- return_and_stdev(price_estimates)$stdev
 #         z <- (log(P_asterix/P_asterix_j_date) - jump * ret1) / (sqrt(jump * stdev))
         weights <- c(1/3,1/3,1/3)
-        IPR <- lowpassfilter(tick_data, actualtime, jump, start_row, weights, 30)
+        #start1 <- Sys.time()
+        IPR <- lowpassfilter(tick_data, actualtime, jump, actualtime - evaltime, weights, 30)
         IPR_df <- rbind(IPR_df, data.frame(Date = totaltime[i], Symbol = stock, IPR = IPR))
+        #print ("IPR Calculation")
+        #print (Sys.time() - start1)
         
         if (stock == Stocks[length(Stocks)]){
           if (actcounter == 1){
@@ -147,8 +153,10 @@ strategy_impliedpricerisk <- function(Stocks, env, starttime, trainperiod){
             stock = as.character(IPR_df$Symbol[b])
             stock_data <- paste(stock,EquityList[1],sep="_")
             tick_data <- env[[stock_data]]
+            #start1 <- Sys.time()
             diff = (SMA(actualtime, shortdur,tick_data$LAST_PRICE) - SMA(actualtime, longdur,tick_data$LAST_PRICE))/tick_data$LAST_PRICE[actualtime]
-
+            #print ("SMA Calculations")
+            #print (Sys.time() - start1)
             # assign percentages to each stock for cash allocations
             threshold <- 1.5*coffs[2]*diff + coffs[1]
             if (threshold > 1){
@@ -196,7 +204,10 @@ strategy_impliedpricerisk <- function(Stocks, env, starttime, trainperiod){
             #           response <- handle_orders(orderline, Stocks, global_tables, tick_data[a+29, "Date"])
             #           print(response)
           }
+          # start1 <- Sys.time()
           response <- handle_orders(orderline, Stocks, global_tables, as.character(totaltime[i]))
+          #print ("Handle Orders:")
+          #print (Sys.time() - start1)
           # smatool <- passiveupdate(response, i, env, Stocks, smatool)
           if (actcounter != length(actiontime)){
             actcounter <- actcounter + 1

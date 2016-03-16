@@ -4,7 +4,7 @@ obtainthreshold <- function(env, Stocks, startindx, lookback, jump){
   longdur = 60
   shortdur = 40
   iterations = 50
-  increment = 0.01
+
   results = data.frame(Date = as.character(), threshold = as.double(), error = as.double(), difference = as.double())
 
   IPR_df <- data.frame(Date = as.character(), Symbol = as.character(), IPR = as.integer(), Diff = as.double())
@@ -36,10 +36,13 @@ obtainthreshold <- function(env, Stocks, startindx, lookback, jump){
 #       z <- (log(P_asterix/P_asterix_j_date) - jump * ret1) / (sqrt(jump * stdev))
       weights <- c(1/3,1/3,1/3)
       # IPR <- lowpassfilter(tick_data, currtime, jump, start_row, weights, 30)
-      IPR <- IPRcalc(tick_data, currtime, jump, start_row)
+      #start1 <- Sys.time()
+      IPR <- IPRcalc(tick_data, currtime, jump, starttime)
       diff = (SMA(currtime, shortdur,tick_data$LAST_PRICE) - SMA(currtime, longdur,tick_data$LAST_PRICE))/tick_data$LAST_PRICE[currtime]
       # diff = (SMA(currtime, shortdur,tick_data$LAST_PRICE) - SMA(currtime, longdur,tick_data$LAST_PRICE))
       IPR_df <- rbind(IPR_df, data.frame(Date = actiontime[j], Symbol = stock, IPR = IPR, Diff = diff))
+      #print ("IPR Calculation:")
+      #print (Sys.time() - start1)
     }
     # Allocate based on allocation function
     threshold <- 0.5
@@ -51,6 +54,7 @@ obtainthreshold <- function(env, Stocks, startindx, lookback, jump){
       pastportvalue = 0 
       futureportvalue = 0
       allocs = data.frame()
+      start1 <- Sys.time()
       for (b in 1:nrow(IPR_df)){
         # Determine direction
         stock = as.character(IPR_df$Symbol[b])
@@ -71,13 +75,16 @@ obtainthreshold <- function(env, Stocks, startindx, lookback, jump){
         finalreturn = totalalloc * (stockreturn - 1)
         returns <- rbind(returns, data.frame(Symbol = stock, return1 = finalreturn, wdiff = cashalloc * IPR_df[b,"Diff"]))
       }
-      
+      #print ("Allocation Calculation")
+      #print (Sys.time() - start1)
       bound <- 5
       portreturn = sum(returns["return1"])
+
       if (abs(sum(returns["return1"])) < bound) {
           results<-rbind(results,data.frame(Date = actiontime[j], threshold = threshold, error = portreturn, difference = sum(returns["wdiff"])))
           break
       } else {
+        increment = log(abs(sum(returns["return1"])))/100
         if (abs(prevreturn) - abs(portreturn) > 0) {
           threshold <- threshold + direct * increment
         } else {
