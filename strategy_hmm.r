@@ -99,13 +99,16 @@ test_HMMM <- function (env, symbol, time_interval, num_states){
   
 
   start_time <- as.POSIXct('2015-05-13 9:30:00 EDT')
-  end_time <- as.POSIXct('2015-09-18 15:59:00 EDT')
+  end_time <- as.POSIXct('2015-09-18 16:00:00 EDT')
 
   
   cat('run performance testing \n')
-  system.time({predictions <- performance_test(start_time, end_time, env, symbol, time_interval, num_states, num_var, A, mu, cov_mat)})
-  actual_directions <- matrix(NA, N, Tnum)
-  for (i in 1:N){
+  system.time({performance_results <- performance_test(start_time, end_time, env, symbol, time_interval, num_states, num_var, A, mu, cov_mat)})
+  
+  predictions <- data.matrix(performance_results[["predictions"]])
+  eod_values <- data.matrix(performance_results[["eod_values"]])
+  actual_directions <- matrix(NA, nrow(predictions), Tnum)
+  for (i in 1:nrow(predictions)){
     for (t in 1:Tnum){
       if (p_increments[i,t] > 0){
         actual_directions[i,t] = TRUE
@@ -118,16 +121,22 @@ test_HMMM <- function (env, symbol, time_interval, num_states){
       }
     }
   }
+  temp_ind <- !is.na(predictions)
+  actual_d2 <- actual_directions[1:nrow(predictions),]
+  comparison <- predictions[temp_ind] == actual_d2[temp_ind]
   
-  comparison <- predictions[,2:Tnum] == actual_directions[1:nrow(predictions),2:Tnum]
-  return(sum(comparison[!is.na(comparison)]) / (nrow(comparison) * ncol(comparison)))
+  accuracy <- sum(comparison[!is.na(comparison)]) / length(comparison)
+  eod_vals <- performance_results[["eod_values"]]
+  rtn_lst <- list(accuracy, eod_vals)
+  names(rtn_lst) <- c("accuracy", "eod_results")
+  return(rtn_lst)
 }
 
 
 get_params_estimates <- function (training_data, num_var, num_states)
 {
   #training data is v X N X T matrix, where v is the number of state_variables, N is the number of time series, and T is the number of timesteps
-  remove_pct <- 0.05
+  remove_pct <- 0.06
   
   Tnum <- dim(training_data)[3]
   N <- dim(training_data)[2]
@@ -178,6 +187,10 @@ performance_test <- function(start_time, end_time, env, symbol, time_interval, n
   #strategy: each minute trying to predict the price movement for next minute. If predicts going
   #up then buy mkt order now and sell mkt order 1 interval later
   #if predicts going down then sell order now and buy 1 interval later
+  max_exp_p_increment <- max(A %*% mu[1,])
+  min_exp_p_increment <- min(A %*% mu[1,])
+  
+  threshold_factor <- 0.6
   
   current_time <- start_time
   if (sum(is.na(getquotes(env, symbol, start_time))) != 0){
@@ -273,14 +286,14 @@ performance_test <- function(start_time, end_time, env, symbol, time_interval, n
         if (current_time > as.POSIXct('2015-05-25 10:00:00 EDT')){
           l1 <- 0
         }
-        if (expected_mu > 0){
+        if (expected_mu > max_exp_p_increment * threshold_factor){
           predicted_price_direction <- append(predicted_price_direction, TRUE)
           current_shares_to_trade <- current_shares_to_trade + lot_size
           future_shares_to_trade <- future_shares_to_trade - lot_size
         }
-        else if (expected_mu < 0){
+        else if (expected_mu < min_exp_p_increment * threshold_factor){
           predicted_price_direction <- append(predicted_price_direction, FALSE)
-          current_shares_to_trade <- current_shares_to_trade -lot_size
+          current_shares_to_trade <- current_shares_to_trade - lot_size
           future_shares_to_trade <- future_shares_to_trade + lot_size
         }
         else{
@@ -349,8 +362,11 @@ performance_test <- function(start_time, end_time, env, symbol, time_interval, n
     current_time <- current_time + 60
     
   }
-  
-  return(prediction_list)
+  predictions <- data.frame(prediction_list)
+  eod_vals <- data.frame(eod_value)
+  rtn_list <- list(predictions, eod_vals)
+  names(rtn_list) <- c('predictions', 'eod_values')
+  return(rtn_list)
   
 }
 
