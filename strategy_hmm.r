@@ -3,6 +3,8 @@ source('constants.r')
 source('backtest_lib.r')
 
 Boxcoxlambda_p_absolute = 0.05
+Boxcoxlambda_p_increments = 0.04
+Boxcoxlambda_interval_volume = 10
 
 test_HMMM <- function (env, symbol, time_interval, num_states){
 
@@ -67,8 +69,13 @@ test_HMMM <- function (env, symbol, time_interval, num_states){
     }
   }
   
+  Boxcoxlambda_interval_volume <- BoxCox.lambda(interval_volume, method=c("guerrero"),lower=-5, upper=5)
+  interval_volume<- BoxCox(interval_volume,lambda = Boxcoxlambda_interval_volume)
   
   p_increments <- VWAP[,2:(Tnum + 1)] - VWAP[,1:Tnum]
+  Boxcoxlambda_p_increments <-BoxCox.lambda(p_increments,method=c("guerrero"),lower=-5, upper=5)
+  p_increments<- BoxCox(p_increments,lambda = Boxcoxlambda_p_increments)
+  
   p_absolute <- abs(VWAP[,2:(Tnum + 1)] - VWAP[,1:Tnum])
   Boxcoxlambda_p_absolute <-BoxCox.lambda(p_absolute,method=c("guerrero"),lower=-5, upper=5)
   p_absolute<- BoxCox(p_absolute,lambda = Boxcoxlambda_p_absolute)
@@ -78,7 +85,7 @@ test_HMMM <- function (env, symbol, time_interval, num_states){
   
   #qqnorm(as.vector(log(interval_volume[1:60,])))
   p_increments_training <- p_increments[training_days,]
-  log_volume_training <- log(interval_volume[training_days,] + 1)
+  log_volume_training <- interval_volume[training_days,]
   p_absolute_training <- p_absolute[training_days,]
   
   num_var <- 3
@@ -99,13 +106,17 @@ test_HMMM <- function (env, symbol, time_interval, num_states){
   
 
   start_time <- as.POSIXct('2015-05-13 9:30:00 EDT')
-  end_time <- as.POSIXct('2015-09-18 15:59:00 EDT')
+  end_time <- as.POSIXct('2015-09-18 16:00:00 EDT')
+
 
   
   cat('run performance testing \n')
-  system.time({predictions <- performance_test(start_time, end_time, env, symbol, time_interval, num_states, num_var, A, mu, cov_mat)})
-  actual_directions <- matrix(NA, N, Tnum)
-  for (i in 1:N){
+  system.time({performance_results <- performance_test(start_time, end_time, env, symbol, time_interval, num_states, num_var, A, mu, cov_mat)})
+  
+  predictions <- data.matrix(performance_results[["predictions"]])
+  eod_values <- data.matrix(performance_results[["eod_values"]])
+  actual_directions <- matrix(NA, nrow(predictions), Tnum)
+  for (i in 1:nrow(predictions)){
     for (t in 1:Tnum){
       if (p_increments[i,t] > 0){
         actual_directions[i,t] = TRUE
@@ -118,16 +129,22 @@ test_HMMM <- function (env, symbol, time_interval, num_states){
       }
     }
   }
+  temp_ind <- !is.na(predictions)
+  actual_d2 <- actual_directions[1:nrow(predictions),]
+  comparison <- predictions[temp_ind] == actual_d2[temp_ind]
   
-  comparison <- predictions[,2:Tnum] == actual_directions[1:nrow(predictions),2:Tnum]
-  return(sum(comparison[!is.na(comparison)]) / (nrow(comparison) * ncol(comparison)))
+  accuracy <- sum(comparison[!is.na(comparison)]) / length(comparison)
+  eod_vals <- performance_results[["eod_values"]]
+  rtn_lst <- list(accuracy, eod_vals)
+  names(rtn_lst) <- c("accuracy", "eod_results")
+  return(rtn_lst)
 }
 
 
 get_params_estimates <- function (training_data, num_var, num_states)
 {
   #training data is v X N X T matrix, where v is the number of state_variables, N is the number of time series, and T is the number of timesteps
-  remove_pct <- 0.05
+  remove_pct <- 0.06
   
   Tnum <- dim(training_data)[3]
   N <- dim(training_data)[2]
@@ -178,6 +195,10 @@ performance_test <- function(start_time, end_time, env, symbol, time_interval, n
   #strategy: each minute trying to predict the price movement for next minute. If predicts going
   #up then buy mkt order now and sell mkt order 1 interval later
   #if predicts going down then sell order now and buy 1 interval later
+  max_exp_p_increment <- max(A %*% mu[1,])
+  min_exp_p_increment <- min(A %*% mu[1,])
+  
+  threshold_factor <- 0.6
   
   current_time <- start_time
   if (sum(is.na(getquotes(env, symbol, start_time))) != 0){
@@ -238,10 +259,10 @@ performance_test <- function(start_time, end_time, env, symbol, time_interval, n
       else if (time_since_open == 23400){
         last_interval_VWAP_price <- cumul_value / cumul_volume
         VWAP_prices <- append(VWAP_prices, last_interval_VWAP_price)
-        p_increment <- VWAP_prices[2:length(VWAP_prices)] - VWAP_prices[1:(length(VWAP_prices) - 1)]
+        p_increments <- VWAP_prices[2:length(VWAP_prices)] - VWAP_prices[1:(length(VWAP_prices) - 1)]
         p_absolute <- abs(VWAP_prices[2:length(VWAP_prices)] - VWAP_prices[1:(length(VWAP_prices) - 1)])
         prediction_list <- rbind(prediction_list, predicted_price_direction)
-        p_increment_list <- rbind(p_increment_list, p_increment)
+        p_increment_list <- rbind(p_increment_list, p_increments)
         p_absolute_list <- rbind(p_absolute_list, p_absolute)
         current_time = current_time + 60 * 60 * 16
       }
@@ -255,32 +276,38 @@ performance_test <- function(start_time, end_time, env, symbol, time_interval, n
         }
         last_interval_volume <- cumul_volume
         VWAP_prices <- append(VWAP_prices, last_interval_VWAP_price)
+        
+        last_interval_volume <- BoxCox(last_interval_volume,lambda = Boxcoxlambda_interval_volume)
         interval_volume <- append(interval_volume, last_interval_volume)
-        p_increment <- VWAP_prices[2:length(VWAP_prices)] - VWAP_prices[1:(length(VWAP_prices) - 1)]
+        
+        p_increments <- VWAP_prices[2:length(VWAP_prices)] - VWAP_prices[1:(length(VWAP_prices) - 1)]
+        p_increments<- BoxCox(p_increments,lambda=Boxcoxlambda_p_increments)
+        
         p_absolute <- abs(VWAP_prices[2:length(VWAP_prices)] - VWAP_prices[1:(length(VWAP_prices) - 1)])
-        p_absolute<- BoxCox(p_absolute,lambda=Boxcoxlambda_p_absolute)
+        p_absolute<- BoxCox(p_absolute,lambda = Boxcoxlambda_p_absolute)
         Tnum <- length(interval_volume)
         test_data <- array(0, c(num_var, Tnum, 1))
-        test_data[1,,] <- p_increment
-        test_data[2,,] <- log(interval_volume + 1)
+        test_data[1,,] <- p_increments
+        test_data[2,,] <- interval_volume
         test_data[3,,] <- p_absolute
         log_alpha <- calc_forward(num_states, 1, Tnum, num_var, A, mu, cov_mat, test_data)
         last_period_alpha <- log_alpha[,length(interval_volume), 1]
         alpha <- exp(last_period_alpha - max(last_period_alpha))
         states_prob <- alpha / sum(alpha)
         next_period_prob <- t(t(states_prob) %*% A)
-        expected_mu <- sum(next_period_prob * mu[1,]) #only calculating expected p_increment for next time period
+        expected_mu <- sum(next_period_prob * mu[1,]) #only calculating expected p_increments for next time period
         if (current_time > as.POSIXct('2015-05-25 10:00:00 EDT')){
           l1 <- 0
         }
-        if (expected_mu > 0){
+
+        if (expected_mu > max_exp_p_increment * threshold_factor){
           predicted_price_direction <- append(predicted_price_direction, TRUE)
           current_shares_to_trade <- current_shares_to_trade + lot_size
           future_shares_to_trade <- future_shares_to_trade - lot_size
         }
-        else if (expected_mu < 0){
+        else if (expected_mu < min_exp_p_increment * threshold_factor){
           predicted_price_direction <- append(predicted_price_direction, FALSE)
-          current_shares_to_trade <- current_shares_to_trade -lot_size
+          current_shares_to_trade <- current_shares_to_trade - lot_size
           future_shares_to_trade <- future_shares_to_trade + lot_size
         }
         else{
@@ -349,8 +376,11 @@ performance_test <- function(start_time, end_time, env, symbol, time_interval, n
     current_time <- current_time + 60
     
   }
-  
-  return(prediction_list)
+  predictions <- data.frame(prediction_list)
+  eod_vals <- data.frame(eod_value)
+  rtn_list <- list(predictions, eod_vals)
+  names(rtn_list) <- c('predictions', 'eod_values')
+  return(rtn_list)
   
 }
 
