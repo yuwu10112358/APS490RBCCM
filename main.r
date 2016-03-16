@@ -62,6 +62,7 @@ import_data(global_tables)
 #                   global_tables$bid_price, globa_tables$market_data)
 
 
-system.time({predic_accuracy <- test_HMMM(global_tables, 'BMO', 5, 3)})
-result<-sum(comparison[!is.na(comparison)]) / (nrow(comparison) * ncol(comparison))
+system.time({predic_accuracy <- test_HMMM(global_tables, 'BMO', 10, 3)})
+#result<-sum(comparison[!is.na(comparison)]) / (nrow(comparison) * ncol(comparison))
+
 
