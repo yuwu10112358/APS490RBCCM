@@ -1,16 +1,22 @@
 source('hmm_v2.r')
 source('constants.r')
 source('backtest_lib.r')
+
+Boxcoxlambda_p_absolute = 0.05
+
 test_HMMM <- function (env, symbol, time_interval, num_states){
+
 #     env <- global_tables
 #     symbol = "BNS"
 #     time_interval = 5
 #     num_states = 4
+
     
   datatable_name <- paste(symbol, Con_Data_Tick_Suffix, sep = "")
   timestamp <- env[[datatable_name]][[Con_Data_ColName_Date]]
   value <- env[[datatable_name]][[Con_Data_ColName_Value]]
   volume <- env[[datatable_name]][[Con_Data_ColName_Volume]]
+  volatility <- env[[datatable_name]][[Con_Data_ColName_Value]]
   
   #timestamp converted into integer represents seconds
   #9:30 EDT mod 86400 = 48600, 9:30 EST mod 86400 = 48600+ 3600
@@ -63,17 +69,24 @@ test_HMMM <- function (env, symbol, time_interval, num_states){
   
   
   p_increments <- VWAP[,2:(Tnum + 1)] - VWAP[,1:Tnum]
+  p_absolute <- abs(VWAP[,2:(Tnum + 1)] - VWAP[,1:Tnum])
+  Boxcoxlambda_p_absolute <-BoxCox.lambda(p_absolute,method=c("guerrero"),lower=-5, upper=5)
+  p_absolute<- BoxCox(p_absolute,lambda = Boxcoxlambda_p_absolute)
   
-  N = 60
-  training_days <- c(1:N)
+  N_training = 60
+  training_days <- c(1:N_training)
   
   #qqnorm(as.vector(log(interval_volume[1:60,])))
   p_increments_training <- p_increments[training_days,]
   log_volume_training <- log(interval_volume[training_days,] + 1)
-  num_var <- 2
-  training_data <- array(0, c(num_var, N, Tnum))
+  p_absolute_training <- p_absolute[training_days,]
+  
+  num_var <- 3
+  training_data <- array(0, c(num_var, N_training, Tnum))
   training_data[1,,] <- p_increments_training
   training_data[2,,] <- log_volume_training
+  training_data[3,,] <- p_absolute_training
+  
   
   cat('get parameter estimates \n')
   
@@ -84,10 +97,10 @@ test_HMMM <- function (env, symbol, time_interval, num_states){
   cov_mat <- array(data.matrix(estimates[["cov_matrix"]]), c(num_var, num_var, num_states))
   
   
-  start_time <- timestamp[1]
 
   start_time <- as.POSIXct('2015-05-13 9:30:00 EDT')
-  end_time <- as.POSIXct('2015-06-18 15:59:00 EDT')
+  end_time <- as.POSIXct('2015-09-18 15:59:00 EDT')
+
   
   cat('run performance testing \n')
   system.time({predictions <- performance_test(start_time, end_time, env, symbol, time_interval, num_states, num_var, A, mu, cov_mat)})
@@ -110,6 +123,7 @@ test_HMMM <- function (env, symbol, time_interval, num_states){
   return(sum(comparison[!is.na(comparison)]) / (nrow(comparison) * ncol(comparison)))
 }
 
+
 get_params_estimates <- function (training_data, num_var, num_states)
 {
   #training data is v X N X T matrix, where v is the number of state_variables, N is the number of time series, and T is the number of timesteps
@@ -126,11 +140,11 @@ get_params_estimates <- function (training_data, num_var, num_states)
       (apply(training_data[i,,], 1, min) < filter[1])
   }
   data_aft_filter <- training_data[,!rows_to_remove,]
-  
   rand_size = dim(data_aft_filter)[2]
   num_estimates <- 1
+
   
-  #order of state parameters: p_increments then log volume
+  #order of state parameters: p_increments then log volume then p_absolute
   #num_estimates is always the last dimension
   
   A_estimates <- array(0, c(num_states, num_states, num_estimates))
@@ -156,7 +170,6 @@ get_params_estimates <- function (training_data, num_var, num_states)
 }
 
 performance_test <- function(start_time, end_time, env, symbol, time_interval, num_states, num_var, A, mu, cov_mat){
-
   #if for a symbol the quotes at a particular time is not available, then
   #it is filled in by the data of the last available minute (e.g, if at 9:33 the data
   #is missing, but at 9:32 it is available, then the quote at 9:32 is taken to be the same
@@ -181,10 +194,13 @@ performance_test <- function(start_time, end_time, env, symbol, time_interval, n
   interval_volume <- vector()
   cumul_volume <- 0
   cumul_value <- 0
+  cumul_volatility <- 0
+  
   orderID <- 0
   predicted_price_direction <- NA
   prediction_list <- matrix(NA, 0, Tnum)
   p_increment_list <- matrix(NA, 0, Tnum)
+  p_absolute_list <- matrix(NA, 0, Tnum)
   
   current_shares_to_trade <- 0
   future_shares_to_trade <- 0
@@ -207,6 +223,8 @@ performance_test <- function(start_time, end_time, env, symbol, time_interval, n
     time_since_open <- get_time_since_open(current_time)
     cumul_value <- cumul_value + quotes[,Con_Data_ColName_LastValue]
     cumul_volume <- cumul_volume + quotes[,Con_Data_ColName_LastVolume]
+    cumul_volatility <- cumul_volatility + quotes[,Con_Data_ColName_LastValue]
+    
     if (time_since_open %% (time_interval* 60) == 0){
       current_shares_to_trade <- future_shares_to_trade
       future_shares_to_trade <- 0
@@ -221,10 +239,10 @@ performance_test <- function(start_time, end_time, env, symbol, time_interval, n
         last_interval_VWAP_price <- cumul_value / cumul_volume
         VWAP_prices <- append(VWAP_prices, last_interval_VWAP_price)
         p_increment <- VWAP_prices[2:length(VWAP_prices)] - VWAP_prices[1:(length(VWAP_prices) - 1)]
-        
+        p_absolute <- abs(VWAP_prices[2:length(VWAP_prices)] - VWAP_prices[1:(length(VWAP_prices) - 1)])
         prediction_list <- rbind(prediction_list, predicted_price_direction)
         p_increment_list <- rbind(p_increment_list, p_increment)
-        
+        p_absolute_list <- rbind(p_absolute_list, p_absolute)
         current_time = current_time + 60 * 60 * 16
       }
       else{
@@ -239,10 +257,13 @@ performance_test <- function(start_time, end_time, env, symbol, time_interval, n
         VWAP_prices <- append(VWAP_prices, last_interval_VWAP_price)
         interval_volume <- append(interval_volume, last_interval_volume)
         p_increment <- VWAP_prices[2:length(VWAP_prices)] - VWAP_prices[1:(length(VWAP_prices) - 1)]
+        p_absolute <- abs(VWAP_prices[2:length(VWAP_prices)] - VWAP_prices[1:(length(VWAP_prices) - 1)])
+        p_absolute<- BoxCox(p_absolute,lambda=Boxcoxlambda_p_absolute)
         Tnum <- length(interval_volume)
         test_data <- array(0, c(num_var, Tnum, 1))
         test_data[1,,] <- p_increment
         test_data[2,,] <- log(interval_volume + 1)
+        test_data[3,,] <- p_absolute
         log_alpha <- calc_forward(num_states, 1, Tnum, num_var, A, mu, cov_mat, test_data)
         last_period_alpha <- log_alpha[,length(interval_volume), 1]
         alpha <- exp(last_period_alpha - max(last_period_alpha))
@@ -285,6 +306,7 @@ performance_test <- function(start_time, end_time, env, symbol, time_interval, n
       }
       cumul_volume <- 0
       cumul_value <- 0
+      cumul_volatility <- 0
       
     }
     
@@ -327,6 +349,7 @@ performance_test <- function(start_time, end_time, env, symbol, time_interval, n
     current_time <- current_time + 60
     
   }
+  
   return(prediction_list)
   
 }
