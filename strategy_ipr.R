@@ -34,7 +34,7 @@ lowpassfilter <- function(tickdata, i, jump, start_row, weights, interval){
   return(crossprod(iprframe$IPR, weights))
 }
 
-strategy_impliedpricerisk <- function(Stocks, env, starttime, trainperiod){
+strategy_impliedpricerisk <- function(Stocks, env, starttime, endtime, trainperiod){
   # Active portion of strategy
   start <- Sys.time()
   IPR_df <- data.frame(Date = as.character(), Symbol = as.character(), IPR = as.integer())
@@ -61,11 +61,11 @@ strategy_impliedpricerisk <- function(Stocks, env, starttime, trainperiod){
   
   #Stocks <- c("AC", "BNS", "BMO")
   EquityList <- c("tick", "ask", "bid")
-  jump <- 13
-  endtime <- 1560
+  jump <- 10
+  # endtime <- 1560
   longdur <- 60
   shortdur <- 40
-  evaltime <- 1560
+  interval <- 30
   
   # if SMA tool = 1, then short sma > long sma and we buy, and vice versa
   smatool <- data.frame(matrix(2, nrow = length(Stocks), ncol = 2))
@@ -73,7 +73,7 @@ strategy_impliedpricerisk <- function(Stocks, env, starttime, trainperiod){
   smatool$Symbol <- Stocks
   stock_data <- paste(Stocks[1],EquityList[1],sep="_")
   totaltime <- env[[stock_data]][["Date"]][starttime+1:(starttime+endtime)]
-  actiontime <- totaltime[seq(1,endtime,30)] # Times to perform active portion
+  actiontime <- totaltime[seq(1,endtime,interval)] # Times to perform active portion
   actiontime <- actiontime[-c(which(strftime(actiontime, format="%H:%M:%S") == "09:30:00",arr.ind=TRUE))]
 
   actcounter <- 1 # count for which action time we are on
@@ -90,10 +90,10 @@ strategy_impliedpricerisk <- function(Stocks, env, starttime, trainperiod){
   for (i in 1:looprow){
     actualtime <- starttime + i
     if ((actualtime %% trainperiod) - 1 == 0){
-      start1 <- Sys.time()
-      coffs <- obtainthreshold(env, Stocks, actualtime, trainperiod, jump)
-      print ("Regression model:")
-      print (Sys.time() - start1)
+      #start1 <- Sys.time()
+      coffs <- obtainthreshold(env, Stocks, actualtime, trainperiod, jump, longdur, shortdur)
+      #print ("Regression model:")
+      #print (Sys.time() - start1)
     }
     #check market condition
     IPR_df <- data.frame()
@@ -124,8 +124,9 @@ strategy_impliedpricerisk <- function(Stocks, env, starttime, trainperiod){
 #         z <- (log(P_asterix/P_asterix_j_date) - jump * ret1) / (sqrt(jump * stdev))
         weights <- c(1/3,1/3,1/3)
         #start1 <- Sys.time()
-        IPR <- lowpassfilter(tick_data, actualtime, jump, actualtime - evaltime, weights, 30)
+        IPR <- lowpassfilter(tick_data, actualtime, jump, actualtime - trainperiod, weights, interval)
         IPR_df <- rbind(IPR_df, data.frame(Date = totaltime[i], Symbol = stock, IPR = IPR))
+        
         #print ("IPR Calculation")
         #print (Sys.time() - start1)
         
@@ -247,8 +248,8 @@ passiveupdate <- function(response, i, env, Stocks, smatool){
 }
 
 ##################################################
-# results <- data.frame()
-# for (i in 1:length(global_tables$positionbook)){
-#   results <- rbind(results, portfoliovalue = sum(global_tables$positionbook[[i]]["MarketValue"]))
-# }
+results <- data.frame()
+for (i in 1:length(global_tables$positionbook)){
+  results <- rbind(results, portfoliovalue = sum(global_tables$positionbook[[i]]["MarketValue"]))
+}
   

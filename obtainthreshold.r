@@ -1,8 +1,8 @@
 
-obtainthreshold <- function(env, Stocks, startindx, lookback, jump){
+obtainthreshold <- function(env, Stocks, startindx, lookback, jump, longdur, shortdur){
   
-  longdur = 60
-  shortdur = 40
+  #longdur = 60
+  #shortdur = 40
   iterations = 50
 
   results = data.frame(Date = as.character(), threshold = as.double(), error = as.double(), difference = as.double())

@@ -1,27 +1,27 @@
 
 import_data <- function(env){
-  env[["AC_ask"]] <- read.csv("AC_ask.csv")
-  env[["AC_ask"]]$Date <- as.POSIXct(env[["AC_ask"]]$Date)
-  env[["AC_bid"]] <- read.csv("AC_bid.csv")
-  env[["AC_bid"]]$Date <- as.POSIXct(env[["AC_bid"]]$Date)
-  env[["AC_tick"]] <- read.csv("AC_tick.csv")
-  env[["AC_tick"]]$Date <- as.POSIXct(env[["AC_tick"]]$Date)
+  env[["CPD_ask"]] <- read.csv("CPD_ask.csv")
+  env[["CPD_ask"]]$Date <- as.POSIXct(env[["CPD_ask"]]$Date)
+  env[["CPD_bid"]] <- read.csv("CPD_bid.csv")
+  env[["CPD_bid"]]$Date <- as.POSIXct(env[["CPD_bid"]]$Date)
+  env[["CPD_tick"]] <- read.csv("CPD_tick.csv")
+  env[["CPD_tick"]]$Date <- as.POSIXct(env[["CPD_tick"]]$Date)
   
-  env[["BNS_ask"]] <- read.csv("BNS_ask.csv")
-  env[["BNS_ask"]]$Date <- as.POSIXct(env[["BNS_ask"]]$Date)
-  env[["BNS_bid"]] <- read.csv("BNS_bid.csv")
-  env[["BNS_bid"]]$Date <- as.POSIXct(env[["BNS_bid"]]$Date)
-  env[["BNS_tick"]] <- read.csv("BNS_tick.csv")
-  env[["BNS_tick"]]$Date <- as.POSIXct(env[["BNS_tick"]]$Date)
+  env[["SU_ask"]] <- read.csv("SU_ask.csv")
+  env[["SU_ask"]]$Date <- as.POSIXct(env[["SU_ask"]]$Date)
+  env[["SU_bid"]] <- read.csv("SU_bid.csv")
+  env[["SU_bid"]]$Date <- as.POSIXct(env[["SU_bid"]]$Date)
+  env[["SU_tick"]] <- read.csv("SU_tick.csv")
+  env[["SU_tick"]]$Date <- as.POSIXct(env[["SU_tick"]]$Date)
   
-  env[["BMO_ask"]] <- read.csv("BMO_ask.csv")
-  env[["BMO_ask"]]$Date <- as.POSIXct(env[["BMO_ask"]]$Date)
-  env[["BMO_bid"]] <- read.csv("BMO_bid.csv")
-  env[["BMO_bid"]]$Date <- as.POSIXct(env[["BMO_bid"]]$Date)
-  env[["BMO_tick"]] <- read.csv("BMO_tick.csv")
-  env[["BMO_tick"]]$Date <- as.POSIXct(env[["BMO_tick"]]$Date)
+  env[["ABX_ask"]] <- read.csv("ABX_ask.csv")
+  env[["ABX_ask"]]$Date <- as.POSIXct(env[["ABX_ask"]]$Date)
+  env[["ABX_bid"]] <- read.csv("ABX_bid.csv")
+  env[["ABX_bid"]]$Date <- as.POSIXct(env[["ABX_bid"]]$Date)
+  env[["ABX_tick"]] <- read.csv("ABX_tick.csv")
+  env[["ABX_tick"]]$Date <- as.POSIXct(env[["ABX_tick"]]$Date)
   
-  Stocks <- c("AC", "BNS", "BMO")
+  Stocks <- c("CPD", "SU", "ABX")
   EquityList <- c("tick", "ask", "bid")
   
   # removes N/A fields and only keeps times when the market is open 
@@ -73,7 +73,15 @@ import_data <- function(env){
       
       for (rw in na_rows){
         rw <- as.integer(rw)
-        testy[rw,1:4] <- testy[rw-1,1:4]
+        if (rw == 1){
+          if(strftime(env[[nm]][rw,"Date"], format="%H:%M:%S") != "09:30:00"){
+            testy[rw,1:4] <- env[[nm]][1,2:5]
+            next
+          } 
+        } else {
+          testy[rw,1:4] <- testy[rw-1,1:4]
+        }
+        
       }
       testy[is.na(testy)] <- 0
       new_data_final <- cbind(dates_list, testy)
