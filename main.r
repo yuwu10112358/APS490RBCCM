@@ -2,11 +2,14 @@ rm(list = ls())
 source('constants.r')
 source('backtest_lib.r')
 source('data_cleaning.r')
+source('strategy_hmm.r')
 library(XLConnect)
 #library(knitr)
-
-
-
+#install.packages("regpro")
+library("regpro")
+library(MASS)
+#install.packages("forecast")
+library("forecast")
 
 # notes 2015-11-20
 
@@ -51,9 +54,6 @@ names(global_tables[[Con_GlobalVarName_PositionBook]])[1] = 0
 global_tables[[Con_GlobalVarName_TradesBook]] <- data.frame(matrix(0, 0, length(tradesbook_spec)))
 colnames(global_tables[[Con_GlobalVarName_TradesBook]]) <- tradesbook_spec
 
-global_tables[[Con_GlobalVarName_MktPrice]] <- list(vector())
-global_tables[[Con_GlobalVarName_BidPrice]] <- list(vector())
-global_tables[[Con_GlobalVarName_AskPrice]] <- list(vector())
 global_tables[[Con_GlobalVarName_ListDates]] <- list(vector())
 
 import_data(global_tables)
@@ -62,5 +62,12 @@ import_data(global_tables)
 #                   global_tables$bid_price, globa_tables$market_data)
 
 
+
+system.time({test_results <- test_HMMM(global_tables, 'BMO', 30, 3)})
+#result<-sum(comparison[!is.na(comparison)]) / (nrow(comparison) * ncol(comparison))
+temp_ind_2 <- !is.na(global_tables$tradesbook[["PnL"]])
+pnl_pertrade <- global_tables$tradesbook[["PnL"]][temp_ind_2]
+eod_vals <- data.matrix(test_results[["eod_results"]])
+plot(eod_vals)
 
 

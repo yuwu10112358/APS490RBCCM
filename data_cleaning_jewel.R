@@ -20,12 +20,12 @@ library(XLConnect)
 
 #=================================================================
 #available stocks: AC,BNS,BMO,SPTSX
-env <- global_tables
-symbol <- "AC" 
-filename <- "/Users/jewelho/dropbox/Capstone_Data_TSX/TSXdatafile.xlsx"
-stock_name = c()
-EquityList <- c("tick", "ask", "bid")
-for (i in 1:3){stock_name[i] <- paste(symbol,EquityList[i],sep="_")}
+# env <- global_tables
+# symbol <- "AC" 
+# filename <- "/Users/jewelho/dropbox/Capstone_Data_TSX/TSXdatafile.xlsx"
+# stock_name = c()
+# EquityList <- c("tick", "ask", "bid")
+# for (i in 1:3){stock_name[i] <- paste(symbol,EquityList[i],sep="_")}
 
 
 #=======================================================================

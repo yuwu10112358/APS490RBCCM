@@ -30,7 +30,7 @@ import_data <- function(env){
       nm <- paste(i,Name,sep="_")
       Opentime <- as.POSIXct("2000-01-01 09:30:00", tz = "EST")
       Opentime <-strftime(Opentime, format="%H:%M:%S")
-      Closetime <- as.POSIXct("2000-01-01 16:00:00", tz = "EST")
+      Closetime <- as.POSIXct("2000-01-01 15:59:00", tz = "EST")
       Closetime <-strftime(Closetime, format="%H:%M:%S")
       row_to_keep <- logical(length = nrow(env[[nm]]) )
       maxrow <- nrow(env[[nm]])
@@ -58,7 +58,7 @@ import_data <- function(env){
       list_dates <- env[["list_dates"]]
       for (i in 1:nrow(list_dates)){
         st <- as.POSIXct(paste(list_dates[i,1], "09:30:00"), origin = "1970-01-01")
-        en <- as.POSIXct(paste(list_dates[i,1], "16:00:00"), origin = "1970-01-01")
+        en <- as.POSIXct(paste(list_dates[i,1], "15:59:00"), origin = "1970-01-01")
         list_times_vec <- rbind(list_times_vec, data.frame(seq(from = st, to = en, by = "min")))
       }
       dates_list <- list_times_vec
