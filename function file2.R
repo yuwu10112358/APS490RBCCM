@@ -26,7 +26,6 @@ strategy_ipr <- function(env){
   
   # loop through each minute (a) but only calculate IPR every 30 minutes  
   
-  
   while (a < end_a){
     for (stock in Stocks){
       stock_data <- paste(stock,EquityList[1],sep="_")
@@ -109,6 +108,8 @@ strategy_ipr <- function(env){
             orderline[entry, Con_FieldName_Qty] <- abs(tradequant)
             if (tradequant > 0){
               orderline[entry, Con_FieldName_Side] <- Con_Side_Buy
+              # don't know if this is getting the right row (a+30) since a is incrementing differently
+              # than the rows of tick_data. NEED TO CHECK 
               orderline[entry, Con_FieldName_Price] <- tick_data[a+30,"LOW"]
             } else{
               orderline[entry, Con_FieldName_Side] <- Con_Side_Sell
@@ -124,5 +125,44 @@ strategy_ipr <- function(env){
     }
     response <- handle_orders(orderline, Stocks, global_tables, as.character(next_date+60))
     a <- a + 30
+    # The following was not run so I did it manually to get the proper position and tradesbook 
+    # if at the the end of all iterations we still own some quantity of stock, we need to clear inventory
+    # may consider putting "generate_orderline" as a function in the future
+    # I have hard-coded "2015-05-20 15:30:00" as the date (only valid for end_a = 1080)
+    if (a == (end_a-1)){
+      ordercounter <- 1
+      orderline = data.frame(matrix(NA, 0, length(order_msg_spec)))
+      colnames(orderline) <- order_msg_spec
+      positionbook <- do.call(rbind, global_tables$positionbook)
+      positionbook <- cbind(Timestamp = rownames(positionbook), positionbook)
+      rownames(positionbook) <- 1:nrow(positionbook)
+      positionbook$Timestamp <- sapply(strsplit(as.character(positionbook$Timestamp),".",fixed = TRUE), "[[", 1)
+      sub_posbook <- subset(positionbook, Timestamp == "2015-05-20 15:30:00")
+      for (o in 2:nrow(sub_posbook)){
+        if (sub_posbook[o, "Quantity"] != 0){
+          stock_data <- paste(sub_posbook[o, "Symbol"],EquityList[1],sep="_")
+          tick_data <- env[[stock_data]]
+          entry <- nrow(orderline) + 1
+          orderline[entry, Con_FieldName_MsgType] <- Con_MsgType_New
+          orderline[entry, Con_FieldName_OrdID] <- ordercounter
+          ordercounter <- ordercounter + 1
+          orderline[entry, Con_FieldName_Sym] <- sub_posbook$Symbol[o]
+          orderline[entry, Con_FieldName_Qty] <- sub_posbook$Quantity[o]
+          tradequant <- sub_posbook[o, "Quantity"]
+          if (tradequant < 0){
+            orderline[entry, Con_FieldName_Side] <- Con_Side_Buy
+            orderline[entry, Con_FieldName_Price] <- tick_data[which(tick_data$Date == "2015-05-20 15:30:00"),"LOW"]
+          } else {
+            orderline[entry, Con_FieldName_Side] <- Con_Side_Sell
+            orderline[entry, Con_FieldName_Price] <- tick_data[which(tick_data$Date == "2015-05-20 15:30:00"),"HIGH"]
+          }
+          orderline[entry, Con_FieldName_OrdType] <- Con_OrdType_Mkt
+          orderline[entry, Con_FieldName_Time] <- as.character("2015-05-20 15:30:00")
+        }
+      }
+      # for testing purposes: 
+      Stocks <- c("AC", "BNS", "BMO")
+      response <- handle_orders(orderline, Stocks, global_tables, as.character("2015-05-20 15:30:00"))
+    }
   }
 }
