@@ -2,12 +2,9 @@ source('hmm_v2.r')
 source('constants.r')
 source('backtest_lib.r')
 
-Boxcoxlambda_p_absolute = 0.05
-Boxcoxlambda_p_increments = 0.04
-Boxcoxlambda_interval_volume = 10
 
 test_HMMM <- function (env, symbol, time_interval, num_states){
-
+  
 #     env <- global_tables
 #     symbol = "BNS"
 #     time_interval = 5
@@ -73,8 +70,8 @@ test_HMMM <- function (env, symbol, time_interval, num_states){
   interval_volume<- BoxCox(interval_volume,lambda = Boxcoxlambda_interval_volume)
   
   p_increments <- VWAP[,2:(Tnum + 1)] - VWAP[,1:Tnum]
-  Boxcoxlambda_p_increments <-BoxCox.lambda(p_increments,method=c("guerrero"),lower=-5, upper=5)
-  p_increments<- BoxCox(p_increments,lambda = Boxcoxlambda_p_increments)
+  #Boxcoxlambda_p_increments <-BoxCox.lambda(p_increments,method=c("guerrero"),lower=-5, upper=5)
+  #p_increments<- BoxCox(p_increments,lambda = Boxcoxlambda_p_increments)
   
   p_absolute <- abs(VWAP[,2:(Tnum + 1)] - VWAP[,1:Tnum])
   Boxcoxlambda_p_absolute <-BoxCox.lambda(p_absolute,method=c("guerrero"),lower=-5, upper=5)
@@ -106,12 +103,12 @@ test_HMMM <- function (env, symbol, time_interval, num_states){
   
 
   start_time <- as.POSIXct('2015-05-13 9:30:00 EDT')
-  end_time <- as.POSIXct('2015-09-18 16:00:00 EDT')
+  end_time <- as.POSIXct('2015-06-15 16:00:00 EDT')
 
 
   
   cat('run performance testing \n')
-  system.time({performance_results <- performance_test(start_time, end_time, env, symbol, time_interval, num_states, num_var, A, mu, cov_mat)})
+  system.time({performance_results <- performance_test(start_time, end_time, env, symbol, time_interval, num_states, num_var, A, mu, cov_mat, Boxcoxlambda_p_absolute, Boxcoxlambda_interval_volume)})
   
   predictions <- data.matrix(performance_results[["predictions"]])
   eod_values <- data.matrix(performance_results[["eod_values"]])
@@ -186,7 +183,7 @@ get_params_estimates <- function (training_data, num_var, num_states)
   return(rtn)
 }
 
-performance_test <- function(start_time, end_time, env, symbol, time_interval, num_states, num_var, A, mu, cov_mat){
+performance_test <- function(start_time, end_time, env, symbol, time_interval, num_states, num_var, A, mu, cov_mat, Boxcoxlambda_p_absolute, Boxcoxlambda_interval_volume){
   #if for a symbol the quotes at a particular time is not available, then
   #it is filled in by the data of the last available minute (e.g, if at 9:33 the data
   #is missing, but at 9:32 it is available, then the quote at 9:32 is taken to be the same
@@ -281,7 +278,7 @@ performance_test <- function(start_time, end_time, env, symbol, time_interval, n
         interval_volume <- append(interval_volume, last_interval_volume)
         
         p_increments <- VWAP_prices[2:length(VWAP_prices)] - VWAP_prices[1:(length(VWAP_prices) - 1)]
-        p_increments<- BoxCox(p_increments,lambda=Boxcoxlambda_p_increments)
+        #p_increments<- BoxCox(p_increments,lambda=Boxcoxlambda_p_increments)
         
         p_absolute <- abs(VWAP_prices[2:length(VWAP_prices)] - VWAP_prices[1:(length(VWAP_prices) - 1)])
         p_absolute<- BoxCox(p_absolute,lambda = Boxcoxlambda_p_absolute)
