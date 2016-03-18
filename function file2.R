@@ -149,7 +149,7 @@ strategy_ipr <- function(env){
           orderline[entry, Con_FieldName_Sym] <- sub_posbook$Symbol[o]
           orderline[entry, Con_FieldName_Qty] <- sub_posbook$Quantity[o]
           tradequant <- sub_posbook[o, "Quantity"]
-          if (tradequant < 0){
+          if (tradequant > 0){
             orderline[entry, Con_FieldName_Side] <- Con_Side_Buy
             orderline[entry, Con_FieldName_Price] <- tick_data[which(tick_data$Date == "2015-05-20 15:30:00"),"LOW"]
           } else {

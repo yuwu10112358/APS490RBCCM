@@ -3,6 +3,8 @@ source('constants.r')
 source('backtest_lib.r')
 source('data_cleaning.r')
 source('strategy_hmm.r')
+source('strategy_ipr.R')
+source('new metrics file.R')
 library(XLConnect)
 #library(knitr)
 #install.packages("regpro")
@@ -57,9 +59,8 @@ colnames(global_tables[[Con_GlobalVarName_TradesBook]]) <- tradesbook_spec
 global_tables[[Con_GlobalVarName_ListDates]] <- list(vector())
 
 import_data(global_tables)
-
-# output <- output(global_tables$tradesbook, global_tables$positionbook, global_tables$ask_price, 
-#                   global_tables$bid_price, globa_tables$market_data)
+strategy_impliedpricerisk(c("CPD", "SU", "ABX"), global_tables, 780, 780, 780)
+output <- output(global_tables$tradesbook, global_tables$positionbook)
 
 
 
