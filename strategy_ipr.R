@@ -89,7 +89,7 @@ strategy_impliedpricerisk <- function(Stocks, env, starttime, endtime, trainperi
   
   for (i in 1:looprow){
     actualtime <- starttime + i
-    if ((actualtime %% trainperiod) - 1 == 0){
+    if ((i %% trainperiod) - 1 == 0){
       #start1 <- Sys.time()
       coffs <- obtainthreshold(env, Stocks, actualtime, trainperiod, jump, longdur, shortdur)
       #print ("Regression model:")

@@ -1,11 +1,18 @@
 
 import_data <- function(env){
-  env[["CPD_ask"]] <- read.csv("CPD_ask.csv")
-  env[["CPD_ask"]]$Date <- as.POSIXct(env[["CPD_ask"]]$Date)
-  env[["CPD_bid"]] <- read.csv("CPD_bid.csv")
-  env[["CPD_bid"]]$Date <- as.POSIXct(env[["CPD_bid"]]$Date)
-  env[["CPD_tick"]] <- read.csv("CPD_tick.csv")
-  env[["CPD_tick"]]$Date <- as.POSIXct(env[["CPD_tick"]]$Date)
+  env[["DOL_ask"]] <- read.csv("DOL_ask.csv")
+  env[["DOL_ask"]]$Date <- as.POSIXct(env[["DOL_ask"]]$Date)
+  env[["DOL_bid"]] <- read.csv("DOL_bid.csv")
+  env[["DOL_bid"]]$Date <- as.POSIXct(env[["DOL_bid"]]$Date)
+  env[["DOL_tick"]] <- read.csv("DOL_tick.csv")
+  env[["DOL_tick"]]$Date <- as.POSIXct(env[["DOL_tick"]]$Date)
+  
+  env[["OTC_ask"]] <- read.csv("OTC_ask.csv")
+  env[["OTC_ask"]]$Date <- as.POSIXct(env[["OTC_ask"]]$Date)
+  env[["OTC_bid"]] <- read.csv("OTC_bid.csv")
+  env[["OTC_bid"]]$Date <- as.POSIXct(env[["OTC_bid"]]$Date)
+  env[["OTC_tick"]] <- read.csv("OTC_tick.csv")
+  env[["OTC_tick"]]$Date <- as.POSIXct(env[["OTC_tick"]]$Date)
   
   env[["SU_ask"]] <- read.csv("SU_ask.csv")
   env[["SU_ask"]]$Date <- as.POSIXct(env[["SU_ask"]]$Date)
@@ -14,6 +21,7 @@ import_data <- function(env){
   env[["SU_tick"]] <- read.csv("SU_tick.csv")
   env[["SU_tick"]]$Date <- as.POSIXct(env[["SU_tick"]]$Date)
   
+<<<<<<< HEAD
   env[["ABX_ask"]] <- read.csv("ABX_ask.csv")
   env[["ABX_ask"]]$Date <- as.POSIXct(env[["ABX_ask"]]$Date)
   env[["ABX_bid"]] <- read.csv("ABX_bid.csv")
@@ -29,6 +37,9 @@ import_data <- function(env){
   env[["SPTSX_tick"]]$Date <- as.POSIXct(env[["SPTSX_tick"]]$Date)
   
   Stocks <- c("CPD", "SU", "ABX")
+=======
+  Stocks <- c("DOL", "OTC", "SU")
+>>>>>>> origin/master
   EquityList <- c("tick", "ask", "bid")
   
   # removes N/A fields and only keeps times when the market is open 
