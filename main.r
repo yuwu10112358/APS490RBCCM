@@ -64,7 +64,7 @@ output <- output(global_tables$tradesbook, global_tables$positionbook)
 
 
 
-system.time({test_results <- test_HMMM(global_tables, 'BMO', 30, 3)})
+system.time({test_results <- test_HMMM(global_tables, c('BMO', 'BNS', 'AC'), 30, 3)})
 #result<-sum(comparison[!is.na(comparison)]) / (nrow(comparison) * ncol(comparison))
 temp_ind_2 <- !is.na(global_tables$tradesbook[["PnL"]])
 pnl_pertrade <- global_tables$tradesbook[["PnL"]][temp_ind_2]
