@@ -325,9 +325,9 @@ output <- function(tradesbook, positionbook){
   
   no_trading_days_yearly <- 250 
   period_portfolio_return <- as.numeric(((PnL_distribution[nrow(PnL_distribution), "PortfolioClose"] - PnL_distribution[1, "PortfolioOpen"]) / 
-                                PnL_distribution[nrow(PnL_distribution), "PortfolioOpen"]) * 100)
+                                PnL_distribution[nrow(PnL_distribution), "PortfolioOpen"]))
   
-  # annualised_portfolio_return <- as.double(as.integer((1 + period_portfolio_return)) ^ (length(Unique_Dates_Traded)/as.integer(no_trading_days_yearly)))
+  annualised_portfolio_return <- (1 + period_portfolio_return) ^ (as.integer(no_trading_days_yearly)/length(Unique_Dates_Traded)) - 1
   
   # calculate annualised portfolio standard deviation from daily returns 
   
@@ -346,8 +346,10 @@ output <- function(tradesbook, positionbook){
     name <- paste(stock_name, "CumPnL")
     name <- paste(name, ".pdf", sep="")
     pdf(name)
-    plot(temp_matrix$CumPnLStock, xaxt = "n", type = "l", xlab= "Date", ylab = "CumPnL", main = paste(stock_name, "CumPnL"))
-    #axis(1, at=as.numeric(temp_matrix$DateTime), las=2)
+    mar.default <- c(5,4,4,2) + 0.1
+    par(mar = mar.default + c(6,0,0,0))
+    plot(temp_matrix$CumPnLStock, xaxt = "n", type = "l", xlab= " ", ylab = "CumPnL", main = paste(stock_name, "CumPnL"))
+    axis(1, at=seq(1, length(temp_matrix$DateTime), 30), labels= temp_matrix$DateTime[seq(1, length(temp_matrix$DateTime), 30)], las = 2)
     dev.off()
     # axis(1, at = temp_matrix$DateTime)
   }
