@@ -21,6 +21,13 @@ import_data <- function(env){
   env[["ABX_tick"]] <- read.csv("ABX_tick.csv")
   env[["ABX_tick"]]$Date <- as.POSIXct(env[["ABX_tick"]]$Date)
   
+  env[["SPTSX_ask"]] <- read.csv("SPTSX_ask.csv")
+  env[["SPTSX_ask"]]$Date <- as.POSIXct(env[["SPTSX_ask"]]$Date)
+  env[["SPTSX_bid"]] <- read.csv("SPTSX_bid.csv")
+  env[["SPTSX_bid"]]$Date <- as.POSIXct(env[["SPTSX_bid"]]$Date)
+  env[["SPTSX_tick"]] <- read.csv("SPTSX_tick.csv")
+  env[["SPTSX_tick"]]$Date <- as.POSIXct(env[["SPTSX_tick"]]$Date)
+  
   Stocks <- c("CPD", "SU", "ABX")
   EquityList <- c("tick", "ask", "bid")
   

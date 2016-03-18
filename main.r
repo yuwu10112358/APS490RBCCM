@@ -1,4 +1,3 @@
-rm(list = ls())
 source('constants.r')
 source('backtest_lib.r')
 source('data_cleaning.r')
@@ -60,7 +59,7 @@ global_tables[[Con_GlobalVarName_ListDates]] <- list(vector())
 
 import_data(global_tables)
 strategy_impliedpricerisk(c("CPD", "SU", "ABX"), global_tables, 780, 780, 780)
-output <- output(global_tables$tradesbook, global_tables$positionbook)
+output <- output(global_tables$tradesbook, global_tables$positionbook, global_tables$SPTSX_ask)
 
 
 
