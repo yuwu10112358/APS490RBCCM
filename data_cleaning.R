@@ -21,7 +21,7 @@ import_data <- function(env){
   env[["SU_tick"]] <- read.csv("SU_tick.csv")
   env[["SU_tick"]]$Date <- as.POSIXct(env[["SU_tick"]]$Date)
   
-<<<<<<< HEAD
+#<<<<<<< HEAD
   env[["ABX_ask"]] <- read.csv("ABX_ask.csv")
   env[["ABX_ask"]]$Date <- as.POSIXct(env[["ABX_ask"]]$Date)
   env[["ABX_bid"]] <- read.csv("ABX_bid.csv")
@@ -37,9 +37,9 @@ import_data <- function(env){
   env[["SPTSX_tick"]]$Date <- as.POSIXct(env[["SPTSX_tick"]]$Date)
   
   Stocks <- c("CPD", "SU", "ABX")
-=======
+#=======
   Stocks <- c("DOL", "OTC", "SU")
->>>>>>> origin/master
+#>>>>>>> origin/master
   EquityList <- c("tick", "ask", "bid")
   
   # removes N/A fields and only keeps times when the market is open 
