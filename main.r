@@ -4,7 +4,7 @@ source('data_cleaning.r')
 source('strategy_hmm.r')
 source('strategy_ipr.R')
 source('new metrics file.R')
-install.packages("tseries")
+#install.packages("tseries")
 library(XLConnect)
 #library(knitr)
 #install.packages("regpro")
@@ -59,13 +59,23 @@ colnames(global_tables[[Con_GlobalVarName_TradesBook]]) <- tradesbook_spec
 global_tables[[Con_GlobalVarName_ListDates]] <- list(vector())
 
 import_data(global_tables)
+<<<<<<< HEAD
 
 strategy_impliedpricerisk(c("CPD", "SU", "ABX"), global_tables, 780, 780, 780)
+=======
+#<<<<<<< HEAD
+strategy_impliedpricerisk(c("DOL", "OTC", "SU"), global_tables, 3900, 20*390, 1050)
+>>>>>>> origin/master
 output <- output(global_tables$tradesbook, global_tables$positionbook, global_tables$SPTSX_ask)
 
 strategy_impliedpricerisk(c("DOL", "OTC", "SU"), global_tables, 780, 780, 780)
+<<<<<<< HEAD
 output <- output(global_tables$tradesbook, global_tables$positionbook, global_tables$SPTSX_ask)
 
+=======
+output <- output(global_tables$tradesbook, global_tables$positionbook)
+#>>>>>>> origin/master
+>>>>>>> origin/master
 
 
 

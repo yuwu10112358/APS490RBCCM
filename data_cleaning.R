@@ -22,12 +22,12 @@ import_data <- function(env){
   env[["SU_tick"]]$Date <- as.POSIXct(env[["SU_tick"]]$Date)
   
 #<<<<<<< HEAD
-#   env[["ABX_ask"]] <- read.csv("ABX_ask.csv")
-#   env[["ABX_ask"]]$Date <- as.POSIXct(env[["ABX_ask"]]$Date)
-#   env[["ABX_bid"]] <- read.csv("ABX_bid.csv")
-#   env[["ABX_bid"]]$Date <- as.POSIXct(env[["ABX_bid"]]$Date)
-#   env[["ABX_tick"]] <- read.csv("ABX_tick.csv")
-#   env[["ABX_tick"]]$Date <- as.POSIXct(env[["ABX_tick"]]$Date)
+  env[["ABX_ask"]] <- read.csv("ABX_ask.csv")
+  env[["ABX_ask"]]$Date <- as.POSIXct(env[["ABX_ask"]]$Date)
+  env[["ABX_bid"]] <- read.csv("ABX_bid.csv")
+  env[["ABX_bid"]]$Date <- as.POSIXct(env[["ABX_bid"]]$Date)
+  env[["ABX_tick"]] <- read.csv("ABX_tick.csv")
+  env[["ABX_tick"]]$Date <- as.POSIXct(env[["ABX_tick"]]$Date)
   
   env[["SPTSX_ask"]] <- read.csv("SPTSX_ask.csv")
   env[["SPTSX_ask"]]$Date <- as.POSIXct(env[["SPTSX_ask"]]$Date)
@@ -36,9 +36,9 @@ import_data <- function(env){
   env[["SPTSX_tick"]] <- read.csv("SPTSX_tick.csv")
   env[["SPTSX_tick"]]$Date <- as.POSIXct(env[["SPTSX_tick"]]$Date)
   
-#  Stocks <- c("CPD", "SU", "ABX")
+  Stocks <- c("CPD", "SU", "ABX")
 #=======
-  Stocks <- c("DOL", "OTC", "SU", "SPTSX")
+  Stocks <- c("DOL", "OTC", "SU")
 #>>>>>>> origin/master
   EquityList <- c("tick", "ask", "bid")
   

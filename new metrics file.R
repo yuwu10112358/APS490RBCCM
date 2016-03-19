@@ -17,13 +17,10 @@ convert_posbook_df <- function(positionbook){
   return(positionbook)
 }
 
+
 output <- function(tradesbook, positionbook, marketdata){
   EquityList <- c("tick", "ask", "bid")
   env <- global_tables
-  init_day <- tradesbook$Timestamp[1]
-  end_day <- tradesbook$Timestamp[nrow(tradesbook)]
-  market_init_price <- marketdata[which(marketdata$Date==init_day), "LAST_PRICE"]
-  market_close_price <- marketdata[which(marketdata$Date==end_day), "LAST_PRICE"] 
   
   # clear all outstanding positions
   
@@ -172,8 +169,6 @@ output <- function(tradesbook, positionbook, marketdata){
       curr_pnl <- (Pnl_df[i, "BidAskPrice"] - Pnl_df[i-1, "BidAskPrice"])*short_qty*-1
     }
     
-    Pnl_df[i, "RawStockPnL"] <- (Pnl_df[i, "BidAskPrice"] - Pnl_df[1, "BidAskPrice"]) 
-    
     # find cum. value. Ensure that the cumulative value is only carried from previous if it was the same stock
     if (i == 1) {
       prev_pnl <- 0
@@ -218,8 +213,6 @@ output <- function(tradesbook, positionbook, marketdata){
     time_list[i, "PortfolioValue"] <- sum(filtered_times[,"BidAskPrice"]*filtered_times[,"Quantity"]) + filtered_times[nrow(filtered_times), "Cash"]
     time_list[i, "PnLPortfolio"] <- time_list[i, "PortfolioValue"] - init_cash
     time_list[i, "PortfolioRet"] <- time_list[i, "PnLPortfolio"]/init_cash
-    curr_market_price <- marketdata[which(marketdata$Date==time_list[i, "DateTime"]), "LAST_PRICE"]
-    time_list[i, "MarketRet"] <- (curr_market_price-market_init_price)/(market_init_price)
   }
 
   # calculate the final cumulative PnL of the portfolio 
@@ -333,28 +326,23 @@ output <- function(tradesbook, positionbook, marketdata){
   # calculate annualised portfolio return and period portfolio return 
   
   no_trading_days_yearly <- 250 
-  period_portfolio_return <- as.numeric(((PnL_distribution[nrow(PnL_distribution), "PortfolioClose"] - init_cash) / 
-                                init_cash))
+  period_portfolio_return <- as.numeric(((PnL_distribution[nrow(PnL_distribution), "PortfolioClose"] - PnL_distribution[1, "PortfolioOpen"]) / 
+                                PnL_distribution[nrow(PnL_distribution), "PortfolioOpen"]))
   
   annualised_portfolio_return <- (1 + period_portfolio_return) ^ (as.integer(no_trading_days_yearly)/length(Unique_Dates_Traded)) - 1
   
   # calculate portfolio standard deviation from minutely portfolio returns 
   
-  port_stdev <- sd(time_list[, "PortfolioRet"])
+  port_stdev <- sd(time_list[, "PortfolioRet"])*100
   
-  # calculate Sharpe Ratio
+  # calculate Sharpe Ratio. Need to access the market dataframe whih stores data of the S&P500
   
-  market_return <- ((market_close_price - market_init_price)/market_init_price)
+  init_day <- tradesbook$Timestamp[1]
+  end_day <- tradesbook$Timestamp[nrow(tradesbook)]
+  market_init_price <- marketdata[which(marketdata$Date==init_day), "LAST_PRICE"]
+  market_close_price <- marketdata[which(marketdata$Date==end_day), "LAST_PRICE"]
+  market_return <- ((market_close_price - market_init_price)/market_init_price)*100
   sharpe_ratio <- (period_portfolio_return - market_return)/port_stdev
-  
-  # correlation of cumulative return with market return
-  
-  corr_return_market <- cor(x = time_list[, "PortfolioRet"], y = time_list[, "MarketRet"], use = "everything",
-                            method = "pearson")
-  
-  # number of stocks in the portfolio 
-  
-  no_stocks <- length(stock_list)
   
   # distribution of cumulative PnL of each stock 
   
@@ -369,18 +357,15 @@ output <- function(tradesbook, positionbook, marketdata){
     plot(temp_matrix$CumPnLStock, xaxt = "n", type = "l", xlab= " ", ylab = "CumPnL", main = paste(stock_name, "CumPnL"))
     axis(1, at=seq(1, length(temp_matrix$DateTime), 30), labels= temp_matrix$DateTime[seq(1, length(temp_matrix$DateTime), 30)], las = 2)
     dev.off()
+    # axis(1, at = temp_matrix$DateTime)
   }
   
   # distribution of cumulative PnL of Portfolio
   
   name <- paste("CumPnLPortfolio", ".pdf", sep="")
   pdf(name)
-  mar.default <- c(5,4,4,2) + 0.1
-  par(mar = mar.default + c(6,0,0,0))
-  plot(time_list$PnLPortfolio, xaxt = "n", type = "l", ylab="PnL ($)", main="PnL of Portfolio", col = "red")
-  lines((time_list$MarketRet*market_init_price), type="l", col = "blue")
-  axis(1, at=seq(1, length(temp_matrix$DateTime), 30), labels= temp_matrix$DateTime[seq(1, length(temp_matrix$DateTime), 30)], las = 2)
-  legend("topright", c("PortfolioPnL", "MarketPnL"), lty=c(1,1), lwd=c(2.5,2.5),col=c("red","blue"))
+  plot(time_list$PnLPortfolio, xaxt = "n", type = "l", xlab="Days", ylab="PnL ($)", main="PnL of Portfolio")
+  #axis(1, at=as.numeric(temp_matrix$DateTime), las=2)
   dev.off()
   
   # distribution of trades per day 
@@ -389,31 +374,35 @@ output <- function(tradesbook, positionbook, marketdata){
   pdf(name)
   trades_per_day_plot <- plot(Trades_distribution$Day, Trades_distribution$TradeCount, 
                               main="Trades Per Day", xlab="Days", 
-                              ylab="Number of Trades", type = "l")
+                              ylab="Number of Trades")
+  axis(2, at = seq(7, max(Trades_distribution$TradeCount, 7))) 
   dev.off()
   
   # distribution of PnL per day 
   
   name <- paste("PnLPerDay", ".pdf", sep="")
   pdf(name)
-  PnL_per_day_plot <- plot(PnL_distribution$Date, PnL_distribution$PnL, main="Portfolio PnL Per Day", xlab="Days", 
-                           ylab="PnL ($)", type = "l")
-  #axis(1, at=seq(1, length(temp_matrix$DateTime), 30), labels= temp_matrix$DateTime[seq(1, length(temp_matrix$DateTime), 30)], las = 2)
+  PnL_per_day_plot <- plot(PnL_distribution$PnL, xaxt = "n",
+                           main="Portfolio PnL Per Day", xlab="Days", 
+                           ylab="PnL ($)")
   dev.off()
   
   # distribution of PnL per trade ($ per share)
   
   name <- paste("PnLPerTrade", ".pdf", sep="")
   pdf(name)
-  mar.default <- c(5,4,4,2) + 0.1
-  par(mar = mar.default + c(6,0,0,0))
   PnL_per_trade_plot <- plot(filter_pnL$PnL, xaxt = "n",
                              main="PnL Per Trade", xlab="Days", 
                              ylab="PnL ($)", type = "l")
-  axis(1, at=seq(1, length(temp_matrix$DateTime), 30), labels= temp_matrix$DateTime[seq(1, length(temp_matrix$DateTime), 30)], las = 2)
   dev.off()
   
   # distribution of PnL per trade ($ per $ invested)
+  
+  # correlation of cumulative return with market return
+  
+  # number of stocks in the portfolio 
+  
+  no_stocks <- length(stock_list)
   
   # summary statistics that pertain to the portfolio
   
@@ -421,11 +410,10 @@ output <- function(tradesbook, positionbook, marketdata){
                                        AvgDailyPnL = average_daily_PnL,CumPnLPortfolio = cumulative_pnl_portfolio, 
                                        PctDaysProfitable = percent_profitable_days, AvgPnLAllTrades = average_PnL_all_trades,
                                        PctTradesProfitable = percent_trades_profitable,
-                                       PeriodPortfolioReturn = period_portfolio_return, AnnualisedPortfolioReturn = annualised_portfolio_return,
-                                       MarketReturn = market_return, MaxDrawdownPerc = MDD_perc,
+                                       PeriodPortfolioReturn = period_portfolio_return, MaxDrawdown = MDD_perc,
                                        MaxDrawDownStart = MDD_period[1], MaxDrawDownEnd = MDD_period[2], 
                                        NumberofStocksInPortfolio = no_stocks, PortfolioStDev = port_stdev, 
-                                       SharpeRatio = sharpe_ratio, PortfolioCorrWithMarket = corr_return_market) 
+                                       SharpeRatio = sharpe_ratio) 
   
   # summary statistics that pertain to the specific stocks
   
@@ -436,10 +424,6 @@ output <- function(tradesbook, positionbook, marketdata){
   
   colnames(Trades_distribution) <- c("Date", "TradeCount")
   summary_statistics_byday <- merge(Trades_distribution, PnL_distribution)
-  
-  write.csv(summary_statistics_all, file = "TestResults1.csv", row.names = FALSE)
-  write.csv(summary_statistics_byStock, file = "TestResults2.csv", row.names = FALSE)
-  write.csv(summary_statistics_byday, file = "TestResults3.csv", row.names = FALSE)
   
   return(list(summary_statistics_all, summary_statistics_byStock, summary_statistics_byday))
 }
