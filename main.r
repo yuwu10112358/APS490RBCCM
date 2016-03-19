@@ -59,32 +59,42 @@ colnames(global_tables[[Con_GlobalVarName_TradesBook]]) <- tradesbook_spec
 global_tables[[Con_GlobalVarName_ListDates]] <- list(vector())
 
 import_data(global_tables)
-<<<<<<< HEAD
-<<<<<<< HEAD
+#<<<<<<< HEAD
+#<<<<<<< HEAD
+#<<<<<<< HEAD
 
-=======
->>>>>>> parent of 6b94998... Updates to graphs
+#=======
+#>>>>>>> parent of 6b94998... Updates to graphs
+#=======
+#>>>>>>> parent of 6b94998... Updates to graphs
 strategy_impliedpricerisk(c("CPD", "SU", "ABX"), global_tables, 780, 780, 780)
-=======
+#=======
 #<<<<<<< HEAD
 strategy_impliedpricerisk(c("DOL", "OTC", "SU"), global_tables, 3900, 20*390, 1050)
->>>>>>> origin/master
+#>>>>>>> origin/master
 output <- output(global_tables$tradesbook, global_tables$positionbook, global_tables$SPTSX_ask)
-<<<<<<< HEAD
+#<<<<<<< HEAD
+#<<<<<<< HEAD
 
 strategy_impliedpricerisk(c("DOL", "OTC", "SU"), global_tables, 780, 780, 780)
-<<<<<<< HEAD
+strategy_impliedpricerisk(c("DOL", "OTC", "SU"), global_tables, 3900, 7800, 3900)
+#<<<<<<< HEAD
 output <- output(global_tables$tradesbook, global_tables$positionbook, global_tables$SPTSX_ask)
 
-=======
+#=======
 output <- output(global_tables$tradesbook, global_tables$positionbook)
 #>>>>>>> origin/master
-=======
-=======
+#=======
+#=======
 strategy_impliedpricerisk(c("DOL", "OTC", "SU"), global_tables, 780, 780, 780)
 output <- output(global_tables$tradesbook, global_tables$positionbook)
->>>>>>> parent of 6b94998... Updates to graphs
->>>>>>> origin/master
+#>>>>>>> parent of 6b94998... Updates to graphs
+#=======
+#=======
+strategy_impliedpricerisk(c("DOL", "OTC", "SU"), global_tables, 780, 780, 780)
+output <- output(global_tables$tradesbook, global_tables$positionbook)
+#>>>>>>> parent of 6b94998... Updates to graphs
+#>>>>>>> origin/master
 
 
 
