@@ -1,3 +1,5 @@
+
+
 get_quantities <- function(curr_side, filtered_tradesbook, j, totalqty_owned){
   # add the quantity owned at each time step
   if (curr_side == 2){
@@ -17,7 +19,6 @@ convert_posbook_df <- function(positionbook){
   return(positionbook)
 }
 
-
 output <- function(tradesbook, positionbook, marketdata){
   EquityList <- c("tick", "ask", "bid")
   env <- global_tables
@@ -28,8 +29,8 @@ output <- function(tradesbook, positionbook, marketdata){
   orderline = data.frame(matrix(NA, 0, length(order_msg_spec)))
   colnames(orderline) <- order_msg_spec
   positionbook <- convert_posbook_df(global_tables$positionbook)
-  seclast_time <- as.character(as.POSIXct(positionbook[(nrow(positionbook)-1), "Timestamp"], origin = "1970-01-01"))
-  last_time <- as.character(as.POSIXct(positionbook[nrow(positionbook), "Timestamp"], origin = "1970-01-01")+1740)
+  seclast_time <- as.character(as.POSIXct(as.numeric(positionbook[(nrow(positionbook)-1), "Timestamp"]), origin = "1970-01-01"))
+  last_time <- as.character(as.POSIXct(as.numeric(positionbook[nrow(positionbook), "Timestamp"]), origin = "1970-01-01")+1740)
   sub_posbook <- subset(positionbook, Timestamp == seclast_time)
 #   for (o in 2:(nrow(sub_posbook))){
 #      if (sub_posbook[o, "Quantity"] != 0){
@@ -84,7 +85,7 @@ output <- function(tradesbook, positionbook, marketdata){
         filtered_tradesbook[j, "QuantityOwned"] <- totalqty_owned
         book_value <- as.double(positionbook[positionbook$Timestamp == start_time_date & positionbook$Symbol == stock_name, ]["BookValue"] / 
                                   positionbook[positionbook$Timestamp == start_time_date & positionbook$Symbol == stock_name, ]["Quantity"])
-        Pnl_df <- rbind(Pnl_df, data.frame(Symbol = stock_list[i] , DateTime = filtered_tradesbook[j, "Timestamp"],
+        Pnl_df <- rbind(Pnl_df, data.frame(Symbol = stock_list[i] , DateTime = as.POSIXct(filtered_tradesbook[j, "Timestamp"], origin = "1970-01-01"),
                                            BidAskPrice = filtered_tradesbook[j, "Price"], 
                                            BookValue = book_value, Side = curr_side,
                                            Quantity = totalqty_owned, OpenClose = curr_pos))
@@ -192,7 +193,7 @@ output <- function(tradesbook, positionbook, marketdata){
   # record the cash in the account at each time step, pulling from the positionbook. 
   
   for (i in 1:NROW(Pnl_df)){
-    curr_date_time <- as.character(Pnl_df[i, "DateTime"])
+    curr_date_time <- as.numeric(Pnl_df[i, "DateTime"])
     cash_amt <- which(positionbook$Timestamp==curr_date_time & positionbook$Symbol=="Cash")
     if (length(cash_amt)>0){
       Pnl_df[i, "Cash"] <- positionbook[which(positionbook$Timestamp==curr_date_time & positionbook$Symbol=="Cash"),
@@ -225,11 +226,11 @@ output <- function(tradesbook, positionbook, marketdata){
   
   # calculate the number of trades per day (trade is only when a position is closed)
   
-  Unique_Dates_Traded <- unique(as.Date(unique(tradesbook$Timestamp)))
+  Unique_Dates_Traded <- unique(as.Date(as.POSIXct(unique(tradesbook$Timestamp), origin = "1970-01-01")))
   Trades_distribution <- data.frame(Day = as.character(), TradeCount = as.integer())
   for (i in 1:length(Unique_Dates_Traded)){
     trades_count <- 0
-    trades_count <- sum(tradesbook$`Open/Close` == "Close" & as.Date(tradesbook$Timestamp) == Unique_Dates_Traded[i])
+    trades_count <- sum(tradesbook$`Open/Close` == "Close" & as.Date(as.POSIXct(tradesbook$Timestamp, origin = "1970-01-01")) == Unique_Dates_Traded[i])
     Trades_distribution <- rbind(Trades_distribution, data.frame(Day = Unique_Dates_Traded[i], 
                                                                  TradeCount = trades_count))
   }
@@ -339,8 +340,8 @@ output <- function(tradesbook, positionbook, marketdata){
   
   init_day <- tradesbook$Timestamp[1]
   end_day <- tradesbook$Timestamp[nrow(tradesbook)]
-  market_init_price <- marketdata[which(marketdata$Date==init_day), "LAST_PRICE"]
-  market_close_price <- marketdata[which(marketdata$Date==end_day), "LAST_PRICE"]
+  market_init_price <- marketdata[which(marketdata$Date==as.POSIXct(init_day, origin = '1970-01-01')), "LAST_PRICE"]
+  market_close_price <- marketdata[which(marketdata$Date==as.POSIXct(end_day, origin = '1970-01-01')), "LAST_PRICE"]
   market_return <- ((market_close_price - market_init_price)/market_init_price)*100
   sharpe_ratio <- (period_portfolio_return - market_return)/port_stdev
   
@@ -349,7 +350,7 @@ output <- function(tradesbook, positionbook, marketdata){
   for (i in 1:length(stock_list)){
     stock_name <- stock_list[i] 
     temp_matrix <- subset(Pnl_df, Symbol == stock_name)
-    name <- paste(stock_name, "CumPnL")
+    name <- paste(Con_output_dir, stock_name, " CumPnL", sep = "")
     name <- paste(name, ".pdf", sep="")
     pdf(name)
     mar.default <- c(5,4,4,2) + 0.1
@@ -362,7 +363,7 @@ output <- function(tradesbook, positionbook, marketdata){
   
   # distribution of cumulative PnL of Portfolio
   
-  name <- paste("CumPnLPortfolio", ".pdf", sep="")
+  name <- paste(Con_output_dir, "CumPnLPortfolio", ".pdf", sep="")
   pdf(name)
   plot(time_list$PnLPortfolio, xaxt = "n", type = "l", xlab="Days", ylab="PnL ($)", main="PnL of Portfolio")
   #axis(1, at=as.numeric(temp_matrix$DateTime), las=2)
@@ -370,7 +371,7 @@ output <- function(tradesbook, positionbook, marketdata){
   
   # distribution of trades per day 
   
-  name <- paste("TradesPerDay", ".pdf", sep="")
+  name <- paste(Con_output_dir, "TradesPerDay", ".pdf", sep="")
   pdf(name)
   trades_per_day_plot <- plot(Trades_distribution$Day, Trades_distribution$TradeCount, 
                               main="Trades Per Day", xlab="Days", 
@@ -380,7 +381,7 @@ output <- function(tradesbook, positionbook, marketdata){
   
   # distribution of PnL per day 
   
-  name <- paste("PnLPerDay", ".pdf", sep="")
+  name <- paste(Con_output_dir, "PnLPerDay", ".pdf", sep="")
   pdf(name)
   PnL_per_day_plot <- plot(PnL_distribution$PnL, xaxt = "n",
                            main="Portfolio PnL Per Day", xlab="Days", 
@@ -389,7 +390,7 @@ output <- function(tradesbook, positionbook, marketdata){
   
   # distribution of PnL per trade ($ per share)
   
-  name <- paste("PnLPerTrade", ".pdf", sep="")
+  name <- paste(Con_output_dir, "PnLPerTrade", ".pdf", sep="")
   pdf(name)
   PnL_per_trade_plot <- plot(filter_pnL$PnL, xaxt = "n",
                              main="PnL Per Trade", xlab="Days", 

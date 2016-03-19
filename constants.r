@@ -6,6 +6,8 @@
 #trade matrix format: time, symbol, side, quantity, price, open/close, pnl
 #position matrix: time, asset(symbol), #of shares, book value, market value,
 
+Con_output_dir = "outputs/"
+
 Con_FieldName_MsgType = "Msgtype"
 Con_FieldName_Sym = "Symbol"
 Con_FieldName_Price = "Price"
