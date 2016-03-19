@@ -57,6 +57,7 @@ colnames(global_tables[[Con_GlobalVarName_TradesBook]]) <- tradesbook_spec
 
 global_tables[[Con_GlobalVarName_ListDates]] <- list(vector())
 
+
 import_data(global_tables, c('BNS', 'BMO', 'AC'))
 
 #strategy_impliedpricerisk(c("CPD", "SU", "ABX"), global_tables, 780, 780, 780)

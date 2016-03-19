@@ -2,7 +2,6 @@
 import_data <- function(env, Stocks){
 
   EquityList <- c("tick", "ask", "bid")
-  
 
   for (s in Stocks){
     for (suffix in EquityList){
@@ -10,7 +9,7 @@ import_data <- function(env, Stocks){
       env[[paste (s,suffix, sep = "_")]]$Date <- as.POSIXct(env[[paste (s,suffix, sep = "_")]]$Date)
     }
   }
-  
+
   env[["SPTSX_ask"]] <- read.csv("SPTSX_ask.csv")
   env[["SPTSX_ask"]]$Date <- as.POSIXct(env[["SPTSX_ask"]]$Date)
   env[["SPTSX_bid"]] <- read.csv("SPTSX_bid.csv")
@@ -18,6 +17,7 @@ import_data <- function(env, Stocks){
   env[["SPTSX_tick"]] <- read.csv("SPTSX_tick.csv")
   env[["SPTSX_tick"]]$Date <- as.POSIXct(env[["SPTSX_tick"]]$Date)
   
+
   # removes N/A fields and only keeps times when the market is open 
   for (i in Stocks){
     for (Name in EquityList){
