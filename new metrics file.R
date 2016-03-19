@@ -17,6 +17,7 @@ convert_posbook_df <- function(positionbook){
   return(positionbook)
 }
 
+
 output <- function(tradesbook, positionbook, marketdata){
   EquityList <- c("tick", "ask", "bid")
   env <- global_tables
