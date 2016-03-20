@@ -61,16 +61,19 @@ global_tables[[Con_GlobalVarName_ListDates]] <- list(vector())
 import_data(global_tables, c('BNS', 'BMO', 'AC'))
 
 #strategy_impliedpricerisk(c("CPD", "SU", "ABX"), global_tables, 780, 780, 780)
-#output <- output(global_tables$tradesbook, global_tables$positionbook)
+#system.time({test_results <- test_HMMM(global_tables, c('BMO'), 30, 3)})
 
+test_results <- test_HMMM(global_tables, c('BMO'), 30, 3)
 
-system.time({test_results <- test_HMMM(global_tables, c('BMO'), 30, 3)})
-
-output <- output(global_tables$tradesbook, global_tables$positionbook, global_tables$SPTSX_ask)
 #result<-sum(comparison[!is.na(comparison)]) / (nrow(comparison) * ncol(comparison))
-# temp_ind_2 <- !is.na(global_tables$tradesbook[["PnL"]])
-# pnl_pertrade <- global_tables$tradesbook[["PnL"]][temp_ind_2]
-# eod_vals <- data.matrix(test_results[["eod_results"]])
+ temp_ind_2 <- !is.na(global_tables$tradesbook[["PnL"]])
+ pnl_pertrade <- global_tables$tradesbook[["PnL"]][temp_ind_2]
+ eod_vals <- data.matrix(test_results[["eod_results"]][["eod_value"]])
+ mu <- data.matrix(test_results[["mu"]])
+ A <- data.matrix(test_results[["A"]])
+ cov_matrix <- data.matrix(test_results[["cov_matrix"]])
+ accuracy <- data.matrix(test_results[["accuracy"]])
 # plot(eod_vals)
-
+ 
+output <- output(global_tables$tradesbook, global_tables$positionbook, global_tables$SPX_ask)
 

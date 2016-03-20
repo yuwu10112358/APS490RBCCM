@@ -56,8 +56,8 @@ test_HMMM <- function (env, symbols, time_interval, num_states){
   
   
 
-  start_time <- as.POSIXct('2015-07-17 9:30:00 EDT')
-  end_time <- as.POSIXct('2015-08-19 16:00:00 EDT')
+  start_time <- as.POSIXct('2015-05-13 9:30:00 EDT')
+  end_time <- as.POSIXct('2015-05-15 16:00:00 EDT')
 
 
   
@@ -88,15 +88,15 @@ test_HMMM <- function (env, symbols, time_interval, num_states){
     temp_ind <- !is.na(prediction_sym)
     actual_d2 <- actual_directions[1:nrow(prediction_sym),]
     comparison <- prediction_sym[temp_ind] == actual_d2[temp_ind]
-    
     accuracy[sym] <- sum(comparison[!is.na(comparison)]) / length(comparison)
   }
   
   eod_vals <- performance_results[["eod_values"]]
-  rtn_lst <- list(accuracy, eod_vals)
-  names(rtn_lst) <- c("accuracy", "eod_results")
+  rtn_lst <- list(accuracy, eod_vals, A, mu, cov_mat)
+  names(rtn_lst) <- c("accuracy", "eod_results",'A', 'mu', 'cov_matrix')
   return(rtn_lst)
 }
+
 
 get_data <- function(env, symbol, time_interval)
 {

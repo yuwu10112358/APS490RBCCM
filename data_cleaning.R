@@ -10,12 +10,19 @@ import_data <- function(env, Stocks){
     }
   }
 
-  env[["SPTSX_ask"]] <- read.csv("SPTSX_ask.csv")
-  env[["SPTSX_ask"]]$Date <- as.POSIXct(env[["SPTSX_ask"]]$Date)
-  env[["SPTSX_bid"]] <- read.csv("SPTSX_bid.csv")
-  env[["SPTSX_bid"]]$Date <- as.POSIXct(env[["SPTSX_bid"]]$Date)
-  env[["SPTSX_tick"]] <- read.csv("SPTSX_tick.csv")
-  env[["SPTSX_tick"]]$Date <- as.POSIXct(env[["SPTSX_tick"]]$Date)
+  #env[["SPTSX_ask"]] <- read.csv("SPTSX_ask.csv")
+  #env[["SPTSX_ask"]]$Date <- as.POSIXct(env[["SPTSX_ask"]]$Date)
+  #env[["SPTSX_bid"]] <- read.csv("SPTSX_bid.csv")
+  #env[["SPTSX_bid"]]$Date <- as.POSIXct(env[["SPTSX_bid"]]$Date)
+  #env[["SPTSX_tick"]] <- read.csv("SPTSX_tick.csv")
+  #env[["SPTSX_tick"]]$Date <- as.POSIXct(env[["SPTSX_tick"]]$Date)
+  
+  env[["SPX_ask"]] <- read.csv("SPX_ask.csv")
+  env[["SPX_ask"]]$Date <- as.POSIXct(env[["SPX_ask"]]$Date)
+  env[["SPX_bid"]] <- read.csv("SPX_bid.csv")
+  env[["SPX_bid"]]$Date <- as.POSIXct(env[["SPX_bid"]]$Date)
+  env[["SPX_tick"]] <- read.csv("SPX_tick.csv")
+  env[["SPX_tick"]]$Date <- as.POSIXct(env[["SPX_tick"]]$Date)
   
 
   # removes N/A fields and only keeps times when the market is open 

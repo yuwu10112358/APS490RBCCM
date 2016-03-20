@@ -87,8 +87,8 @@ output <- function(tradesbook, positionbook, marketdata){
         curr_pos <- filtered_tradesbook$`Open/Close`[j]
         totalqty_owned <- get_quantities(curr_side, filtered_tradesbook, j, totalqty_owned)
         filtered_tradesbook[j, "QuantityOwned"] <- totalqty_owned
-        book_value <- as.double(positionbook[positionbook$Timestamp == start_time_date & positionbook$Symbol == stock_name, ]["BookValue"] / 
-                                  positionbook[positionbook$Timestamp == start_time_date & positionbook$Symbol == stock_name, ]["Quantity"])
+        book_value <- as.double(unlist(positionbook[positionbook$Timestamp == start_time_date & positionbook$Symbol == stock_name, ]["BookValue"] / 
+                                  positionbook[positionbook$Timestamp == start_time_date & positionbook$Symbol == stock_name, ]["Quantity"][1]))[1]
         Pnl_df <- rbind(Pnl_df, data.frame(Symbol = stock_list[i] , DateTime = as.POSIXct(filtered_tradesbook[j, "Timestamp"], origin = "1970-01-01"),
                                            BidAskPrice = filtered_tradesbook[j, "Price"], 
                                            BookValue = book_value, Side = curr_side,
@@ -110,8 +110,8 @@ output <- function(tradesbook, positionbook, marketdata){
       next_side <- filtered_tradesbook$Side[j+1]
       curr_pos <- filtered_tradesbook$`Open/Close`[j]
       next_pos <- filtered_tradesbook$`Open/Close`[j+1]
-      book_value <- as.double(positionbook[positionbook$Timestamp == start_time_date & positionbook$Symbol == stock_name, ]["BookValue"] / 
-                                 positionbook[positionbook$Timestamp == start_time_date & positionbook$Symbol == stock_name, ]["Quantity"])
+      book_value <- as.double(unlist(positionbook[positionbook$Timestamp == start_time_date & positionbook$Symbol == stock_name, ]["BookValue"] / 
+                                 positionbook[positionbook$Timestamp == start_time_date & positionbook$Symbol == stock_name, ]["Quantity"][1]))[1]
       
       totalqty_owned <- get_quantities(curr_side, filtered_tradesbook, j, totalqty_owned)
       # qty_owned <- qty_owned_results[1]
@@ -140,10 +140,7 @@ output <- function(tradesbook, positionbook, marketdata){
       qty_owned <- rep(totalqty_owned, times = length(prices))
       curr_pos <- rep(curr_pos, times = length(prices))
       
-      Pnl_df <- rbind(Pnl_df, data.frame(Symbol = stock_names, DateTime = dates,
-                                         BidAskPrice = prices, 
-                                         BookValue = book_values, Side = curr_sides,
-                                         Quantity = qty_owned, OpenClose = curr_pos))
+      Pnl_df <- rbind(Pnl_df, data.frame(Symbol = stock_names, DateTime = dates,BidAskPrice = prices,BookValue = book_values, Side = curr_sides,Quantity = qty_owned, OpenClose = curr_pos))
     }
     
   }
@@ -199,12 +196,15 @@ output <- function(tradesbook, positionbook, marketdata){
   
   for (i in 1:NROW(Pnl_df)){
     curr_date_time <- as.numeric(Pnl_df[i, "DateTime"])
-    cash_amt <- which(positionbook$Timestamp==curr_date_time & positionbook$Symbol=="Cash")
+    cash_amt <- positionbook[which(positionbook$Timestamp==curr_date_time & positionbook$Symbol=="Cash"),"Quantity"]
     if (length(cash_amt)>0){
       Pnl_df[i, "Cash"] <- positionbook[which(positionbook$Timestamp==curr_date_time & positionbook$Symbol=="Cash"),
                                         "BookValue"]
-    } else {
+    } else  if (i !=1){
       Pnl_df[i, "Cash"] <- Pnl_df[i-1, "Cash"]
+    }
+    else{
+      Pnl_df[i, "Cash"] <- 100000
     }
   }
   
