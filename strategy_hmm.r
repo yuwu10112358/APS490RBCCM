@@ -16,7 +16,7 @@ test_HMMM <- function (env, symbols, time_interval, num_states){
   num_sym <- length(symbols)
   Tnum = 23400 / (time_interval * 60)
   
-  N_training = 60
+  N_training = 90
   training_days <- c(1:N_training)
   
   num_var <- 3
@@ -57,7 +57,7 @@ test_HMMM <- function (env, symbols, time_interval, num_states){
   
 
   start_time <- as.POSIXct('2015-05-13 9:30:00 EDT')
-  end_time <- as.POSIXct('2015-05-15 16:00:00 EDT')
+  end_time <- as.POSIXct('2015-11-23 16:00:00 EDT')
 
 
   

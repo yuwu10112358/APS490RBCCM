@@ -219,9 +219,15 @@ output <- function(tradesbook, positionbook, marketdata){
     time_list[i, "PortfolioValue"] <- sum(filtered_times[,"BidAskPrice"]*filtered_times[,"Quantity"]) + filtered_times[nrow(filtered_times), "Cash"]
     time_list[i, "PnLPortfolio"] <- time_list[i, "PortfolioValue"] - init_cash
     time_list[i, "PortfolioRet"] <- time_list[i, "PnLPortfolio"]/init_cash
-    curr_market_price <- marketdata[which(marketdata$Date==time_list[i, "DateTime"]), "LAST_PRICE"]
-    time_list[i, "MarketRet"] <- (curr_market_price-market_init_price)/(market_init_price)
-  }
+    curr_market_price <- marketdata[which(as.POSIXct(marketdata$Date)==as.POSIXct(time_list[i, "DateTime"])), "LAST_PRICE"]
+    if (length(curr_market_price) == 0){
+      time_list[i, "MarketRet"] <- time_list[i -1, "MarketRet"]
+    }
+    else{
+      time_list[i, "MarketRet"] <- (curr_market_price-market_init_price)/(market_init_price)
+    }
+   
+    }
 
   # calculate the final cumulative PnL of the portfolio 
   

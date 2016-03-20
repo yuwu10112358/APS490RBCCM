@@ -1,0 +1,2 @@
+$accuracy,,NumberofTradesTotal,AvgTradesPerDay,AvgDailyPnL,CumPnLPortfolio,PctDaysProfitable,AvgPnLAllTrades,PctTradesProfitable,PeriodPortfolioReturn,AnnualisedPortfolioReturn,MarketReturn,MaxDrawdownPerc,MaxDrawDownStart,MaxDrawDownEnd,NumberofStocksInPortfolio,PortfolioStDev,SharpeRatio,PortfolioCorrWithMarket
+0.5982906,0.6271186,188,2.611111111,-3.069444444,-216,41.66666667,-1.14893617,45.21276596,-0.00216,-0.007479996,-0.003725006,-0.515958723,2015-05-13 12:01,2015-07-28 11:00,2,0.00108342,1.444505704,-0.269464798

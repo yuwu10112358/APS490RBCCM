@@ -74,6 +74,7 @@ test_results <- test_HMMM(global_tables, c('BMO'), 30, 3)
  cov_matrix <- data.matrix(test_results[["cov_matrix"]])
  accuracy <- data.matrix(test_results[["accuracy"]])
 # plot(eod_vals)
- 
+
 output <- output(global_tables$tradesbook, global_tables$positionbook, global_tables$SPX_ask)
+
 
